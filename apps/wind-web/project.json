@@ -14,7 +14,8 @@
     "serve": {
       "executor": "@nx/vite:dev-server",
       "options": {
-        "port": 4200
+        "port": 5173,
+        "buildTarget": "wind-web:build"
       }
     },
     "test": {
