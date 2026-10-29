@@ -35,8 +35,8 @@ def get_elexon_client() -> ElexonClient:
 
 @router.get("/wind/actuals", response_model=ActualsResponse, summary="Get actual wind generation")
 async def get_actuals(
-    date_from: str = Query(..., alias="from", description="Start date YYYY-MM-DD"),
-    date_to: str = Query(..., alias="to", description="End date YYYY-MM-DD"),
+    date_from: str = Query("2026-01-01", alias="from", description="Start date YYYY-MM-DD (default: 2026-01-01)"),
+    date_to: str = Query("2026-01-31", alias="to", description="End date YYYY-MM-DD (default: 2026-01-31)"),
     client: ElexonClient = Depends(get_elexon_client),
 ):
     try:
@@ -53,8 +53,8 @@ async def get_actuals(
 
 @router.get("/wind/forecasts", response_model=ForecastsResponse, summary="Get wind forecasts (all versions)")
 async def get_forecasts(
-    date_from: str = Query(..., alias="from", description="Start date YYYY-MM-DD"),
-    date_to: str = Query(..., alias="to", description="End date YYYY-MM-DD"),
+    date_from: str = Query("2026-01-01", alias="from", description="Start date YYYY-MM-DD (default: 2026-01-01)"),
+    date_to: str = Query("2026-01-31", alias="to", description="End date YYYY-MM-DD (default: 2026-01-31)"),
     client: ElexonClient = Depends(get_elexon_client),
 ):
     try:
@@ -72,8 +72,8 @@ async def get_forecasts(
 
 @router.get("/wind/coverage", response_model=CoverageResponse, summary="Get data coverage for period")
 async def get_coverage(
-    date_from: str = Query(..., alias="from", description="Start date YYYY-MM-DD"),
-    date_to: str = Query(..., alias="to", description="End date YYYY-MM-DD"),
+    date_from: str = Query("2026-01-01", alias="from", description="Start date YYYY-MM-DD (default: 2026-01-01)"),
+    date_to: str = Query("2026-01-31", alias="to", description="End date YYYY-MM-DD (default: 2026-01-31)"),
     client: ElexonClient = Depends(get_elexon_client),
 ):
     try:
