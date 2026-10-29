@@ -101,76 +101,96 @@ def select_day_ahead_forecasts(
     """
     Select day-ahead forecasts for all delivery intervals in the date range.
     
-    For each 30-minute delivery interval:
-    1. Determine the local delivery date
-    2. Calculate the previous day's decision cutoff in UTC
-    3. Find forecasts matching that delivery interval
-    4. Exclude forecasts published after the cutoff
-    5. Select the latest eligible forecast by publishTime
-    6. Preserve the selected forecast's publishTime
-    7. Mark intervals without an eligible forecast as missing
+    WINDFOR provides hourly forecasts (odd settlement periods 1,3,5...47).
+    Each hourly forecast covers two half-hour settlement periods.
+    We expand each hourly forecast to two half-hour intervals.
+    
+    For each delivery date:
+    1. Determine the previous day's decision cutoff in UTC
+    2. Group forecasts by delivery date and hour (hour = (period-1)//2)
+    3. For each hour, select the latest eligible forecast by publishTime
+    6. Expand each selected hourly forecast to two half-hour intervals
+    7. Preserve the selected forecast's publishTime
     """
-    # Group forecasts by delivery interval
-    forecasts_by_interval = {}
+    # Group forecasts by delivery date and hour (hour = (period-1)//2)
+    forecasts_by_date_hour = {}
     for f in forecasts:
-        key = _delivery_key(f)
-        if key not in forecasts_by_interval:
-            forecasts_by_interval[key] = []
-        forecasts_by_interval[key].append(f)
+        key = (f.settlement_date, (f.settlement_period - 1) // 2)
+        if key not in forecasts_by_date_hour:
+            forecasts_by_date_hour[key] = []
+        forecasts_by_date_hour[key].append(f)
     
     results = []
     
     current_date = delivery_date_from
     while current_date <= delivery_date_to:
         cutoff_utc = config.get_cutoff_utc(current_date)
+        date_str = current_date.isoformat()
         
-        # January has 48 periods (no DST change)
-        for period in range(1, 49):
-            key = (current_date.isoformat(), period)
-            interval_forecasts = forecasts_by_interval.get(key, [])
+        # For each of the 24 hours in the day
+        for hour in range(24):
+            key = (date_str, hour)
+            hour_forecasts = forecasts_by_date_hour.get(key, [])
             
-            # Calculate delivery start UTC
+            # Determine the two half-hour periods for this hour
+            period_odd = hour * 2 + 1      # 1,3,5,...,47
+            period_even = hour * 2 + 2     # 2,4,6,...,48
+            
+            # Calculate delivery start UTC for the two half-hours
             from app.services.wind_data import _settlement_to_utc
-            delivery_start_utc = _settlement_to_utc(current_date.isoformat(), period)
+            delivery_start_utc_odd = _settlement_to_utc(date_str, period_odd)
+            delivery_start_utc_even = delivery_start_utc_odd + timedelta(minutes=30)
             
-            if not interval_forecasts:
-                results.append(SelectedForecast(
-                    delivery_start_utc=delivery_start_utc,
-                    settlement_date=current_date.isoformat(),
-                    settlement_period=period,
-                    forecast_generation_mw=0.0,
-                    forecast_publish_time_utc=datetime.min.replace(tzinfo=UTC_TZ),
-                    decision_cutoff_utc=cutoff_utc,
-                    forecast_age_hours=0.0,
-                    selection_status="no_forecast_at_all",
-                ))
+            if not hour_forecasts:
+                # No forecast for this hour at all
+                for period in (period_odd, period_even):
+                    delivery_start = delivery_start_utc_odd if period == period_odd else delivery_start_utc_even
+                    results.append(SelectedForecast(
+                        delivery_start_utc=delivery_start,
+                        settlement_date=date_str,
+                        settlement_period=period,
+                        forecast_generation_mw=0.0,
+                        forecast_publish_time_utc=datetime.min.replace(tzinfo=UTC_TZ),
+                        decision_cutoff_utc=cutoff_utc,
+                        forecast_age_hours=0.0,
+                        selection_status="no_forecast_at_all",
+                    ))
                 continue
             
-            selected = _select_latest_eligible_forecast(interval_forecasts, cutoff_utc)
+            # Select latest eligible forecast for this hour
+            cutoff_utc = config.get_cutoff_utc(current_date)
+            selected = _select_latest_eligible_forecast(hour_forecasts, cutoff_utc)
             
             if selected is None:
-                results.append(SelectedForecast(
-                    delivery_start_utc=delivery_start_utc,
-                    settlement_date=current_date.isoformat(),
-                    settlement_period=period,
-                    forecast_generation_mw=0.0,
-                    forecast_publish_time_utc=datetime.min.replace(tzinfo=UTC_TZ),
-                    decision_cutoff_utc=cutoff_utc,
-                    forecast_age_hours=0.0,
-                    selection_status="no_eligible_forecast",
-                ))
+                for period in (period_odd, period_even):
+                    delivery_start = delivery_start_utc_odd if period == period_odd else delivery_start_utc_even
+                    results.append(SelectedForecast(
+                        delivery_start_utc=delivery_start,
+                        settlement_date=date_str,
+                        settlement_period=period,
+                        forecast_generation_mw=0.0,
+                        forecast_publish_time_utc=datetime.min.replace(tzinfo=UTC_TZ),
+                        decision_cutoff_utc=cutoff_utc,
+                        forecast_age_hours=0.0,
+                        selection_status="no_eligible_forecast",
+                    ))
             else:
                 age_hours = (cutoff_utc - selected.publish_time_utc).total_seconds() / 3600
-                results.append(SelectedForecast(
-                    delivery_start_utc=delivery_start_utc,
-                    settlement_date=current_date.isoformat(),
-                    settlement_period=period,
-                    forecast_generation_mw=selected.generation_mw,
-                    forecast_publish_time_utc=selected.publish_time_utc,
-                    decision_cutoff_utc=cutoff_utc,
-                    forecast_age_hours=age_hours,
-                    selection_status="selected",
-                ))
+                gen_mw = selected.generation_mw
+                pub_time = selected.publish_time_utc
+                
+                # Create two half-hour entries from the hourly forecast
+                for period, delivery_start in [(period_odd, delivery_start_utc_odd), (period_even, delivery_start_utc_even)]:
+                    results.append(SelectedForecast(
+                        delivery_start_utc=delivery_start,
+                        settlement_date=date_str,
+                        settlement_period=period,
+                        forecast_generation_mw=gen_mw,
+                        forecast_publish_time_utc=pub_time,
+                        decision_cutoff_utc=cutoff_utc,
+                        forecast_age_hours=age_hours,
+                        selection_status="selected",
+                    ))
         
         current_date += timedelta(days=1)
     
