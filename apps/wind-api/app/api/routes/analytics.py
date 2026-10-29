@@ -17,13 +17,18 @@ from app.schemas.wind import (
     AnalyticsResponse as AnalyticsResponseSchema,
     SelectedForecastRecord,
     AlignedRecord,
+    AccuracyMetricsResponse,
+    DirectionalMetricsResponse,
+    DistributionMetricsResponse,
+    CoverageMetricsResponse,
+    BusinessInsightsResponse,
 )
 
 router = APIRouter()
 
 
 class AnalyticsParams(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
     
     date_from: str = Query("2026-01-01", alias="from", description="Start date YYYY-MM-DD (default: 2026-01-01)")
     date_to: str = Query("2026-01-31", alias="to", description="End date YYYY-MM-DD (default: 2026-01-31)")
@@ -85,11 +90,45 @@ def _analytics_to_schema(a: AnalyticsResponse) -> AnalyticsResponseSchema:
         methodology=a.methodology,
         cutoff_config=a.cutoff_config,
         dataset_provenance=a.dataset_provenance,
-        accuracy_metrics=a.accuracy_metrics,
-        directional_metrics=a.directional_metrics,
-        distribution_metrics=a.distribution_metrics,
-        coverage_metrics=a.coverage_metrics,
-        business_insights=a.business_insights,
+        accuracy_metrics=AccuracyMetricsResponse(
+            mae_mw=a.accuracy_metrics.mae_mw,
+            rmse_mw=a.accuracy_metrics.rmse_mw,
+            mean_error_mw=a.accuracy_metrics.mean_error_mw,
+            mape_percent=a.accuracy_metrics.mape_percent,
+            mape_excluded_count=a.accuracy_metrics.mape_excluded_count,
+            mape_included_count=a.accuracy_metrics.mape_included_count,
+        ),
+        directional_metrics=DirectionalMetricsResponse(
+            overestimation_count=a.directional_metrics.overestimation_count,
+            underestimation_count=a.directional_metrics.underestimation_count,
+            exact_match_count=a.directional_metrics.exact_match_count,
+            overestimation_volume_mw=a.directional_metrics.overestimation_volume_mw,
+            underestimation_volume_mw=a.directional_metrics.underestimation_volume_mw,
+            overestimation_frequency_pct=a.directional_metrics.overestimation_frequency_pct,
+            underestimation_frequency_pct=a.directional_metrics.underestimation_frequency_pct,
+        ),
+        distribution_metrics=DistributionMetricsResponse(
+            max_absolute_error_mw=a.distribution_metrics.max_absolute_error_mw,
+            median_absolute_error_mw=a.distribution_metrics.median_absolute_error_mw,
+            p90_absolute_error_mw=a.distribution_metrics.p90_absolute_error_mw,
+            p95_absolute_error_mw=a.distribution_metrics.p95_absolute_error_mw,
+            p99_absolute_error_mw=a.distribution_metrics.p99_absolute_error_mw,
+        ),
+        coverage_metrics=CoverageMetricsResponse(
+            total_evaluated_intervals=a.coverage_metrics.total_evaluated_intervals,
+            matched_intervals=a.coverage_metrics.matched_intervals,
+            missing_forecast_intervals=a.coverage_metrics.missing_forecast_intervals,
+            missing_actual_intervals=a.coverage_metrics.missing_actual_intervals,
+            evaluation_coverage_pct=a.coverage_metrics.evaluation_coverage_pct,
+        ),
+        business_insights=BusinessInsightsResponse(
+            systematic_bias=a.business_insights.systematic_bias,
+            bias_magnitude_mw=a.business_insights.bias_magnitude_mw,
+            bias_direction=a.business_insights.bias_direction,
+            higher_error_periods=a.business_insights.higher_error_periods,
+            key_finding=a.business_insights.key_finding,
+            caveats=a.business_insights.caveats,
+        ),
     )
 
 

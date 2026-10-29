@@ -46,7 +46,7 @@ export const api = {
       cutoff_minute: params.cutoff_minute,
       timezone: params.timezone,
     });
-    return fetchJson<DayAheadForecastsResponse>(`/api/v1/analytics/day-ahead?${query}`, options);
+    return fetchJson<DayAheadForecastsResponse>(`/api/analytics/day-ahead?${query}`, options);
   },
 
   getTimeSeries(params: AnalyticsParams, options?: RequestOptions): Promise<TimeSeriesResponse> {
@@ -57,7 +57,7 @@ export const api = {
       cutoff_minute: params.cutoff_minute,
       timezone: params.timezone,
     });
-    return fetchJson<TimeSeriesResponse>(`/api/v1/analytics/timeseries?${query}`, options);
+    return fetchJson<TimeSeriesResponse>(`/api/analytics/timeseries?${query}`, options);
   },
 
   getAccuracy(params: AnalyticsParams, options?: RequestOptions): Promise<AnalyticsResponse> {
@@ -68,7 +68,7 @@ export const api = {
       cutoff_minute: params.cutoff_minute,
       timezone: params.timezone,
     });
-    return fetchJson<AnalyticsResponse>(`/api/v1/analytics/accuracy?${query}`, options);
+    return fetchJson<AnalyticsResponse>(`/api/analytics/accuracy?${query}`, options);
   },
 
   getCoverage(params: { date_from: string; date_to: string }, options?: RequestOptions): Promise<CoverageResponse> {
@@ -76,7 +76,7 @@ export const api = {
       from: params.date_from,
       to: params.date_to,
     });
-    return fetchJson<CoverageResponse>(`/api/v1/wind/coverage?${query}`, options);
+    return fetchJson<CoverageResponse>(`/api/wind/coverage?${query}`, options);
   },
 
   getHealth(options?: RequestOptions): Promise<{ ok: boolean }> {

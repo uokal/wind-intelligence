@@ -325,7 +325,7 @@ class TestElexonClient:
     @pytest.mark.asyncio
     async def test_get_fuelhh_timeout(self):
         client = ElexonClient(api_key="test_key")
-        client._get = AsyncMock(side_effect=TimeoutError("Request timeout"))
+        client._get_json = AsyncMock(side_effect=TimeoutError("Request timeout"))
         
         with pytest.raises(TimeoutError):
             await client.get_fuelhh("2026-01-01", "2026-01-01")
@@ -334,7 +334,7 @@ class TestElexonClient:
     async def test_get_fuelhh_http_error(self):
         import httpx
         client = ElexonClient(api_key="test_key")
-        client._get = AsyncMock(side_effect=httpx.HTTPStatusError("404", request=MagicMock(), response=MagicMock(status_code=404)))
+        client._get_json = AsyncMock(side_effect=httpx.HTTPStatusError("404", request=MagicMock(), response=MagicMock(status_code=404)))
         
         with pytest.raises(httpx.HTTPStatusError):
             await client.get_fuelhh("2026-01-01", "2026-01-01")
@@ -348,8 +348,8 @@ class TestElexonClient:
         client = ElexonClient(api_key="test_key", timeout=1.0)
         
         # Verify retry configuration exists
-        assert hasattr(client._get, 'retry')
-        retry_state = client._get.retry
+        assert hasattr(client._get_json, 'retry')
+        retry_state = client._get_json.retry
         
         # Check stop condition (max 3 attempts)
         assert retry_state.stop is not None

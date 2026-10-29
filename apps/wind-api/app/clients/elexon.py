@@ -68,8 +68,7 @@ class ElexonClient:
         Returns list of dicts with keys: settlementDate, settlementPeriod, fuelType, quantity (MW).
         """
         params = {"settlementDateFrom": from_date, "settlementDateTo": to_date}
-        # Use compatibility _get so that tests can mock it
-        raw = await self._get("FUELHH", params)
+        raw = await self._get_json("/datasets/FUELHH/stream", params)
         records = []
         for entry in raw:
             if entry.get("fuelType") != "WIND":
