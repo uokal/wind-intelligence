@@ -252,6 +252,15 @@ def compute_business_insights(
     )
 
 
+def _expected_intervals(date_from: str, date_to: str) -> int:
+    from datetime import datetime
+    d0 = datetime.strptime(date_from, "%Y-%m-%d")
+    d1 = datetime.strptime(date_to, "%Y-%m-%d")
+    days = (d1 - d0).days + 1
+    # Assume 48 periods per day (no DST handling for simplicity)
+    return days * 48
+
+
 def compute_full_analytics(
     aligned_records: List[AlignedRecord],
     date_from: str,
@@ -264,6 +273,15 @@ def compute_full_analytics(
     directional = compute_directional_metrics(aligned_records)
     distribution = compute_distribution_metrics(aligned_records)
     coverage = compute_coverage_metrics(aligned_records)
+    # Override total_evaluated_intervals with expected intervals based on date range
+    expected = _expected_intervals(date_from, date_to)
+    coverage = CoverageMetrics(
+        total_evaluated_intervals=expected,
+        matched_intervals=coverage.matched_intervals,
+        missing_forecast_intervals=coverage.missing_forecast_intervals,
+        missing_actual_intervals=coverage.missing_actual_intervals,
+        evaluation_coverage_pct=round(coverage.matched_intervals / expected * 100, 2) if expected else 0.0,
+    )
     insights = compute_business_insights(aligned_records, accuracy, directional, distribution)
     
     methodology = {
@@ -277,7 +295,7 @@ def compute_full_analytics(
         "actuals_dataset": "Elexon BMRS FUELHH (fuelType=WIND)",
         "forecasts_dataset": "Elexon BMRS WINDFOR",
         "delivery_date_range": f"{date_from} to {date_to}",
-        "expected_intervals": 1488,  # 31 days * 48 periods
+        "expected_intervals": expected,
     }
     
     return AnalyticsResponse(

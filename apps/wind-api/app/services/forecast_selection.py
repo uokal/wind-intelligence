@@ -185,9 +185,13 @@ def align_actuals_and_forecasts(
     Match actual and forecast records by normalized UTC delivery interval.
     
     For each interval, return aligned record with error calculations.
+    Only forecasts with selection_status == 'selected' are considered.
     """
     actuals_by_interval = {_delivery_key(a): a for a in actuals}
-    forecasts_by_interval = {_delivery_key(f): f for f in selected_forecasts}
+    # Only consider forecasts that were actually selected (i.e., have a valid publication)
+    forecasts_by_interval = {
+        _delivery_key(f): f for f in selected_forecasts if f.selection_status == "selected"
+    }
     
     all_keys = set(actuals_by_interval.keys()) | set(forecasts_by_interval.keys())
     
