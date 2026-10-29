@@ -1,0 +1,13 @@
+packages:
+  - 'apps/*'
+  - 'libs/*'
+
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': false
+  dtrace-provider: false
+  esbuild: false
+  less: false
+  nx: false
+  sharp: false
+  unrs-resolver: false

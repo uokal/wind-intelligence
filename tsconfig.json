@@ -1,0 +1,35 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./libs/shared-types"
+    },
+    {
+      "path": "./libs/validation"
+    },
+    {
+      "path": "./libs/constants"
+    },
+    {
+      "path": "./apps/api-e2e"
+    },
+    {
+      "path": "./apps/web-e2e"
+    },
+    {
+      "path": "./apps/mobile"
+    },
+    {
+      "path": "./libs/utils"
+    },
+    {
+      "path": "./apps/api"
+    },
+    {
+      "path": "./apps/web"
+    }
+  ],
+  "compilerOptions": {}
+}
