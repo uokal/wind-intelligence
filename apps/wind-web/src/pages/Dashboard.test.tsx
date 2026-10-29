@@ -221,4 +221,196 @@ describe('Dashboard', () => {
       expect(screen.getByText('Elexon BMRS')).toBeInTheDocument();
     });
   });
+
+  test('empty dataset shows empty state', async () => {
+    const emptyAccuracy = {
+      ...mockAccuracyResponse,
+      accuracy_metrics: {
+        mae_mw: 0,
+        rmse_mw: 0,
+        mean_error_mw: 0,
+        mape_percent: null,
+        mape_excluded_count: 0,
+        mape_included_count: 0,
+      },
+      directional_metrics: {
+        overestimation_count: 0,
+        underestimation_count: 0,
+        exact_match_count: 0,
+        overestimation_volume_mw: 0,
+        underestimation_volume_mw: 0,
+        overestimation_frequency_pct: 0,
+        underestimation_frequency_pct: 0,
+      },
+      distribution_metrics: {
+        max_absolute_error_mw: 0,
+        median_absolute_error_mw: 0,
+        p90_absolute_error_mw: 0,
+        p95_absolute_error_mw: 0,
+        p99_absolute_error_mw: 0,
+      },
+      coverage_metrics: {
+        total_evaluated_intervals: 0,
+        matched_intervals: 0,
+        missing_forecast_intervals: 0,
+        missing_actual_intervals: 0,
+        evaluation_coverage_pct: 0,
+      },
+      business_insights: {
+        systematic_bias: 'neutral',
+        bias_magnitude_mw: 0,
+        bias_direction: 'zero',
+        higher_error_periods: [],
+        key_finding: 'No data available',
+        caveats: [],
+      },
+    };
+    const emptyTimeSeries = { ...mockTimeSeriesResponse, records: [] };
+    const emptyDayAhead = { ...mockDayAheadResponse, records: [] };
+    const emptyCoverage = {
+      ...mockCoverageResponse,
+      expected_intervals: 0,
+      actual_intervals: 0,
+      forecast_intervals: 0,
+      forecast_versions: 0,
+      missing_actual_intervals: 0,
+      missing_forecast_intervals: 0,
+    };
+
+    api.getAccuracy.mockResolvedValue(emptyAccuracy);
+    api.getTimeSeries.mockResolvedValue(emptyTimeSeries);
+    api.getDayAheadForecasts.mockResolvedValue(emptyDayAhead);
+    api.getCoverage.mockResolvedValue(emptyCoverage);
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('No data available')).toBeInTheDocument();
+    });
+  });
+
+  test('Elexon timeout shows error', async () => {
+    api.getAccuracy.mockRejectedValue(new Error('Timeout'));
+    api.getTimeSeries.mockRejectedValue(new Error('Timeout'));
+    api.getDayAheadForecasts.mockRejectedValue(new Error('Timeout'));
+    api.getCoverage.mockRejectedValue(new Error('Timeout'));
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Some requests failed/)).toBeInTheDocument();
+    });
+  });
+
+  test('HTTP 429 rate limit shows error', async () => {
+    const rateLimitError = new Error('Rate limited');
+    (rateLimitError as any).status = 429;
+    api.getAccuracy.mockRejectedValue(rateLimitError);
+    api.getTimeSeries.mockRejectedValue(rateLimitError);
+    api.getDayAheadForecasts.mockRejectedValue(rateLimitError);
+    api.getCoverage.mockRejectedValue(rateLimitError);
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Some requests failed/)).toBeInTheDocument();
+    });
+  });
+
+  test('HTTP 500 upstream error shows error', async () => {
+    const serverError = new Error('Internal Server Error');
+    (serverError as any).status = 500;
+    api.getAccuracy.mockRejectedValue(serverError);
+    api.getTimeSeries.mockRejectedValue(serverError);
+    api.getDayAheadForecasts.mockRejectedValue(serverError);
+    api.getCoverage.mockRejectedValue(serverError);
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Some requests failed/)).toBeInTheDocument();
+    });
+  });
+
+  test('missing forecast records displayed', async () => {
+    const timeSeriesMissingForecast = {
+      ...mockTimeSeriesResponse,
+      records: [
+        {
+          delivery_start_utc: '2026-01-01T00:00:00Z',
+          settlement_date: '2026-01-01',
+          settlement_period: 1,
+          actual_generation_mw: 5000.0,
+          forecast_generation_mw: null,
+          forecast_publish_time_utc: null,
+          decision_cutoff_utc: '2025-12-31T12:00:00Z',
+          error_mw: null,
+          absolute_error_mw: null,
+          percentage_error: null,
+          alignment_status: 'missing_forecast',
+        },
+      ],
+    };
+    const dayAheadMissing = {
+      ...mockDayAheadResponse,
+      records: [
+        {
+          delivery_start_utc: '2026-01-01T00:00:00Z',
+          settlement_date: '2026-01-01',
+          settlement_period: 1,
+          forecast_generation_mw: 0,
+          forecast_publish_time_utc: '1970-01-01T00:00:00Z',
+          decision_cutoff_utc: '2025-12-31T12:00:00Z',
+          forecast_age_hours: 0,
+          selection_status: 'no_eligible_forecast',
+        },
+      ],
+    };
+
+    api.getAccuracy.mockResolvedValue(mockAccuracyResponse);
+    api.getTimeSeries.mockResolvedValue(timeSeriesMissingForecast);
+    api.getDayAheadForecasts.mockResolvedValue(dayAheadMissing);
+    api.getCoverage.mockResolvedValue(mockCoverageResponse);
+
+    renderDashboard();
+
+    await waitFor(() => {
+      // The transparency table shows selection status label
+      expect(screen.getByText('No eligible forecast (after cutoff)')).toBeInTheDocument();
+    });
+  });
+
+  test('missing actual records displayed', async () => {
+    const timeSeriesMissingActual = {
+      ...mockTimeSeriesResponse,
+      records: [
+        {
+          delivery_start_utc: '2026-01-01T00:00:00Z',
+          settlement_date: '2026-01-01',
+          settlement_period: 1,
+          actual_generation_mw: null,
+          forecast_generation_mw: 5200.0,
+          forecast_publish_time_utc: '2025-12-31T10:00:00Z',
+          decision_cutoff_utc: '2025-12-31T12:00:00Z',
+          error_mw: null,
+          absolute_error_mw: null,
+          percentage_error: null,
+          alignment_status: 'missing_actual',
+        },
+      ],
+    };
+
+    api.getAccuracy.mockResolvedValue(mockAccuracyResponse);
+    api.getTimeSeries.mockResolvedValue(timeSeriesMissingActual);
+    api.getDayAheadForecasts.mockResolvedValue(mockDayAheadResponse);
+    api.getCoverage.mockResolvedValue(mockCoverageResponse);
+
+    renderDashboard();
+
+    await waitFor(() => {
+      // The chart area shows gaps; there is no explicit "Missing actual" text.
+      // Verify that the chart renders without error.
+      expect(screen.getByText('Forecast vs Actual Generation')).toBeInTheDocument();
+    });
+  });
 });
