@@ -29,6 +29,12 @@
     },
     {
       "path": "./apps/web"
+    },
+    {
+      "path": "./apps/wind-web-e2e"
+    },
+    {
+      "path": "./apps/wind-web"
     }
   ],
   "compilerOptions": {}
