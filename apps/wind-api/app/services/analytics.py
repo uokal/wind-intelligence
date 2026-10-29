@@ -96,8 +96,8 @@ def compute_accuracy_metrics(aligned_records: List[AlignedRecord]) -> AccuracyMe
     rmse = math.sqrt(statistics.mean(e * e for e in errors))
     mean_error = statistics.mean(errors)
     
-    # MAPE with zero-actual handling (exclude actual <= 1 MW)
-    mape_included = [r for r in matched if r.actual_generation_mw is not None and r.actual_generation_mw > 1.0]
+    # MAPE with zero-actual handling (exclude only actual == 0)
+    mape_included = [r for r in matched if r.actual_generation_mw is not None and r.actual_generation_mw > 0]
     mape_excluded_count = len(matched) - len(mape_included)
     
     if mape_included:
@@ -236,7 +236,7 @@ def compute_business_insights(
     caveats = [
         "Analysis limited to January 2026 (31 days, 1,488 intervals)",
         "Day-ahead cutoff assumption: 12:00 Europe/London on D-1 (EPEX SPOT gate closure)",
-        "MAPE excludes intervals with actual generation <= 1 MW",
+        "MAPE excludes intervals with actual generation == 0 MW",
         "Missing actual/forecast intervals excluded from error metrics",
         "Results based on Elexon BMRS FUELHH (actuals) and WINDFOR (forecasts) datasets",
         "No consumer demand data included; wind-only analysis",
@@ -269,7 +269,7 @@ def compute_full_analytics(
     methodology = {
         "forecast_selection": "Latest eligible forecast published on or before D-1 12:00 Europe/London",
         "error_sign_convention": "Error = Forecast - Actual (positive = overestimation)",
-        "mape_zero_handling": "Exclude intervals where actual <= 1 MW",
+        "mape_zero_handling": "Exclude intervals where actual == 0 MW",
         "aggregation_level": "Per settlement period (30-min), daily rollup available",
     }
     
