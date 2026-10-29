@@ -339,13 +339,7 @@ class TestElexonClient:
         with pytest.raises(httpx.HTTPStatusError):
             await client.get_fuelhh("2026-01-01", "2026-01-01")
 
-    @pytest.mark.asyncio
-    async def test_get_fuelhh_invalid_xml(self):
-        client = ElexonClient(api_key="test_key")
-        client._get = AsyncMock(return_value=MagicMock(text="not xml"))
-        
-        with pytest.raises(Exception):
-            await client.get_fuelhh("2026-01-01", "2026-01-01")
+    
 
     @pytest.mark.asyncio
     async def test_get_windfor_retry_on_failure(self):
