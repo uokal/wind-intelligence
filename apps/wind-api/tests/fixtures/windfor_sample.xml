@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <metadata>
+    <dataset>WINDFOR</dataset>
+    <fromDate>2026-01-01</fromDate>
+    <toDate>2026-01-01</toDate>
+    <generatedAt>2026-10-29T10:00:00Z</generatedAt>
+  </metadata>
+  <data>
+    <item>
+      <settlementDate>2026-01-01</settlementDate>
+      <settlementPeriod>1</settlementPeriod>
+      <publishTime>2025-12-31T10:00:00Z</publishTime>
+      <generation>5200.0</generation>
+    </item>
+    <item>
+      <settlementDate>2026-01-01</settlementPeriod>1</settlementPeriod>
+      <publishTime>2025-12-31T14:00:00Z</publishTime>
+      <generation>5250.0</generation>
+    </item>
+    <item>
+      <settlementDate>2026-01-01</settlementPeriod>1</settlementPeriod>
+      <publishTime>2026-01-01T06:00:00Z</publishTime>
+      <generation>5300.0</generation>
+    </item>
+    <item>
+      <settlementDate>2026-01-01</settlementPeriod>2</settlementPeriod>
+      <publishTime>2025-12-31T10:00:00Z</publishTime>
+      <generation>5400.0</generation>
+    </item>
+    <item>
+      <settlementDate>2026-01-01</settlementPeriod>2</settlementPeriod>
+      <publishTime>2025-12-31T14:00:00Z</publishTime>
+      <generation>5420.0</generation>
+    </item>
+    <item>
+      <settlementDate>2026-01-01</settlementPeriod>3</settlementPeriod>
+      <publishTime>2025-12-31T10:00:00Z</publishTime>
+      <generation>5100.0</generation>
+    </item>
+  </data>
+</response>

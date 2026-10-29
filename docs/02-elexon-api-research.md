@@ -253,3 +253,151 @@ Use **ElexonDataPortal** library (pip install `ElexonDataPortal`) which provides
 4. Endpoint Definitions: https://raw.githubusercontent.com/OSUKED/ElexonDataPortal/master/data/endpoints.csv
 5. michaelkavanagh/elexon: https://github.com/michaelkavanagh/elexon (11★)
 6. Elexon Portal Registration: https://www.elexonportal.co.uk/registration/newuser
+
+---
+
+## 13. Implementation: Elexon Client (Task 03)
+
+### 13.1 Client Module: `apps/wind-api/app/clients/elexon.py`
+
+- **HTTP Client:** `httpx.AsyncClient` with configurable timeout (default 30s)
+- **Retry Logic:** `tenacity` with exponential backoff (1s, 2s, 4s, 8s, max 3 retries)
+- **Retry Conditions:** `httpx.RequestError`, `httpx.HTTPStatusError` (5xx, 429)
+- **No Retry:** 401/403 (auth errors)
+- **Configurable:** API base URL, API key, timeout, max retries via environment variables
+- **Structured Logging:** Debug logs for requests (API key redacted), errors logged with context
+
+**Environment Variables:**
+```
+ELEXON_API_BASE=https://api.bmreports.com/BMRS
+ELEXON_API_KEY=<your_key>
+ELEXON_REQUEST_TIMEOUT=30.0
+ELEXON_MAX_RETRIES=3
+```
+
+### 13.2 Normalization Service: `apps/wind-api/app/services/wind_data.py`
+
+**Actual Generation (FUELHH → ActualGenerationRecord):**
+- Filter `fuelType == "WIND"` (case-insensitive field names supported)
+- Extract `settlementDate`, `settlementPeriod`, `quantity`
+- Convert to UTC: `delivery_start_utc` via `Europe/London` timezone
+- Deduplicate on `(settlementDate, settlementPeriod)` — keep first
+- Validate `generation_mw >= 0` (MW, not MWh)
+- Track stats: total, invalid, duplicates
+
+**Forecast Generation (WINDFOR → ForecastGenerationRecord):**
+- Extract `settlementDate`, `settlementPeriod`, `publishTime`, `generation` (supports `generation`, `Generation`, `forecastMW`)
+- Parse `publishTime` to UTC-aware datetime
+- Convert delivery to UTC via `Europe/London` timezone
+- **Preserve all forecast versions** — no deduplication on delivery interval
+- Validate `generation_mw >= 0`
+- Track stats: total, invalid
+
+**Coverage Computation (`compute_coverage`):**
+- Expected intervals = days × 48 (Jan 2026 = 31 × 48 = 1,488)
+- Actual intervals = unique `(settlementDate, settlementPeriod)` in actuals
+- Forecast intervals = unique `(settlementDate, settlementPeriod)` in forecasts
+- Forecast versions = total forecast records (all versions)
+- Coverage % = unique intervals / expected × 100
+- Missing intervals = expected - actual/forecast intervals
+- Reports: duplicates, invalid records, coverage percentages
+
+### 13.3 Schemas: `apps/wind-api/app/schemas/wind.py`
+
+Pydantic V2 models with `field_validator` and `ConfigDict`:
+
+- `ActualGenerationRecord`: delivery_start_utc, generation_mw, settlement_date, settlement_period, source_dataset, fuel_type
+- `ForecastGenerationRecord`: delivery_start_utc, publish_time_utc, generation_mw, settlement_date, settlement_period, source_dataset
+- `ActualsResponse`, `ForecastsResponse`, `CoverageResponse`: wrapper responses with metadata
+
+### 13.4 API Routes: `apps/wind-api/app/api/routes/wind.py`
+
+Versioned under `/api/v1`:
+
+- `GET /wind/actuals` — Query: `from`, `to` (YYYY-MM-DD). Returns `ActualsResponse`.
+- `GET /wind/forecasts` — Query: `from`, `to`. Returns `ForecastsResponse` with `interval_count` (unique) and `version_count` (total).
+- `GET /wind/coverage` — Query: `from`, `to`. Returns `CoverageResponse`.
+
+**Error Handling:**
+- Invalid date format → 422 (Pydantic validation)
+- Upstream Elexon failure → 502 (Bad Gateway) with error detail
+- Empty datasets → 200 with empty records, coverage reflects gaps
+
+---
+
+## 14. Data Quality & Coverage Methodology
+
+**Expected Intervals Calculation:**
+- For date range `[date_from, date_to]`: `days = (date_to - date_from).days + 1`
+- `expected = days * 48`
+- January 2026: 31 days × 48 = **1,488 intervals**
+- Clock-change days not in January (Spring forward is March, Autumn back is October)
+
+**Coverage Percentages:**
+- Based on **unique delivery intervals**, not raw row counts
+- `actual_coverage_pct = actual_intervals / expected * 100`
+- `forecast_coverage_pct = forecast_intervals / expected * 100`
+
+**Data Quality Metrics Reported:**
+- `expected_intervals`: Total half-hour periods in range
+- `actual_intervals`: Unique delivery intervals with actual data
+- `forecast_intervals`: Unique delivery intervals with ≥1 forecast
+- `forecast_versions`: Total forecast records (all versions)
+- `missing_actual_intervals`: Expected - actual_intervals
+- `missing_forecast_intervals`: Expected - forecast_intervals
+- `duplicate_actual_records`: Dropped duplicate `(date, period)` in FUELHH
+- `invalid_actual_records`: Rows failing validation (missing fields, non-numeric, negative)
+- `invalid_forecast_records`: Rows failing validation in WINDFOR
+
+---
+
+## 15. Test Fixture Strategy
+
+**Location:** `apps/wind-api/tests/fixtures/`
+
+- `fuelhh_sample.xml` — Minimal FUELHH response with WIND and CCGT records
+- `windfor_sample.xml` — Minimal WINDFOR response with 3 versions for period 1, 2 for period 2, 1 for period 3
+
+**Principles:**
+- Fixtures are **deterministic** and **labelled as test data**
+- Represent documented Elexon XML response schema
+- No API keys committed
+- No synthetic data claimed as real Elexon records
+- Small size for fast test execution
+- Used exclusively in mocked unit tests
+
+**If Capturing Real January 2026 Data:**
+- Document provenance (date captured, API key owner, request parameters)
+- Store separately from test fixtures (e.g., `data/jan2026/`)
+- Not committed to repository unless explicitly required
+
+---
+
+## 16. Unverified Assumptions (Requiring Validation)
+
+| # | Assumption | Validation Needed |
+|---|------------|-------------------|
+| 1 | January 2026 data structure matches 2024/2025 | Test when date approaches |
+| 2 | WINDFOR `publishTime` is always UTC | Inspect live response |
+| 3 | FUELHH `fuelType == "WIND"` captures all wind (on+offshore) | Cross-reference with B1630 |
+| 4 | Maximum date range per request is 31 days | Test with larger ranges |
+| 5 | Rate limit is ~1 req/s | Load test during implementation |
+| 6 | Forecast `outturnMW` populated after settlement | Verify with recent data |
+
+---
+
+## 17. Known Limitations
+
+1. **No Live API Key in CI:** Tests use mocked responses; live integration requires `ELEXON_API_KEY` environment variable.
+2. **Python 3.9 vs 3.12:** Local development uses Python 3.9.6; Docker image targets 3.12-slim. Code is compatible with both.
+3. **Clock-Change Handling:** January 2026 has no DST transitions; `_settlement_to_utc` uses `pytz` for correct Europe/London offsets.
+4. **No Database:** All data fetched on-demand from Elexon; no caching layer implemented (Task 03 scope).
+5. **Single-Request Date Range:** Client requests full range in one call; Elexon may split internally. For >31 days, consider manual chunking.
+6. **DocStatus/DocumentRevNum Not Parsed:** XML parser extracts only `<item>` children; revision metadata available but not yet modeled.
+7. **WINDFOR `generation` vs `forecastMW`:** Implementation accepts both field names; verify which is canonical in live responses.
+
+---
+
+## AI Disclosure
+
+This project was developed with AI assistance (Claude/Opencode) for a technical evaluation. All architectural decisions, code review, and validation performed by human.

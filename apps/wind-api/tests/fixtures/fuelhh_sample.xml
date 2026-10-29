@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <metadata>
+    <dataset>FUELHH</dataset>
+    <fromDate>2026-01-01</fromDate>
+    <toDate>2026-01-01</toDate>
+    <generatedAt>2026-10-29T10:00:00Z</generatedAt>
+  </metadata>
+  <data>
+    <item>
+      <settlementDate>2026-01-01</settlementDate>
+      <settlementPeriod>1</settlementPeriod>
+      <fuelType>WIND</fuelType>
+      <quantity>5234.5</quantity>
+    </item>
+    <item>
+      <settlementDate>2026-01-01</settlementDate>
+      <settlementPeriod>2</settlementPeriod>
+      <fuelType>WIND</fuelType>
+      <quantity>5456.2</quantity>
+    </item>
+    <item>
+      <settlementDate>2026-01-01</settlementDate>
+      <settlementPeriod>1</settlementPeriod>
+      <fuelType>CCGT</fuelType>
+      <quantity>12000.0</quantity>
+    </item>
+    <item>
+      <settlementDate>2026-01-01</settlementDate>
+      <settlementPeriod>3</settlementPeriod>
+      <fuelType>WIND</fuelType>
+      <quantity>5123.8</quantity>
+    </item>
+  </data>
+</response>
