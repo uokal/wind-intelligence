@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-from app.api.routes import health, wind
+from app.api.routes import health, wind, analytics
 from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +25,7 @@ app.add_middleware(
 
 app.include_router(health.router, prefix=settings.API_V1_STR)
 app.include_router(wind.router, prefix=settings.API_V1_STR)
+app.include_router(analytics.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

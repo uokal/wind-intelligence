@@ -257,9 +257,75 @@ All parameters externalized to configuration file / environment variables for au
 
 ---
 
-## 11. Validation and Auditability
+## 11. Implementation Details
 
-### 11.1 Selection Log Output
+### 11.1 Service Location
+
+- **Forecast Selection:** `apps/wind-api/app/services/forecast_selection.py`
+- **Analytics:** `apps/wind-api/app/services/analytics.py`
+- **API Endpoints:** `apps/wind-api/app/api/routes/analytics.py`
+
+### 11.2 Key Implementation Decisions
+
+| Decision | Implementation |
+|----------|----------------|
+| **Timezone handling** | Uses `zoneinfo.ZoneInfo("Europe/London")` for DST-aware conversions |
+| **Tie-breaking** | Deterministic: latest `publishTime`, then lowest `generation_mw` |
+| **Duplicate forecasts** | Exact duplicates (same publishTime, same MW) handled gracefully |
+| **Out-of-order records** | Internal sorting ensures correct selection regardless of input order |
+| **Missing forecasts** | Returns `SelectedForecast` with `selection_status` indicating reason |
+| **Forecast age** | Calculated as hours between cutoff and forecast publishTime |
+| **January 2026 intervals** | 31 days × 48 periods = 1,488 (no DST change in January) |
+
+### 11.3 API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/analytics/day-ahead` | Selected day-ahead forecast for each interval |
+| `GET /api/v1/analytics/timeseries` | Aligned actuals, forecasts, and errors |
+| `GET /api/v1/analytics/accuracy` | Complete accuracy metrics package |
+
+**Query Parameters:**
+- `from` / `to`: Date range (default: 2026-01-01 to 2026-01-31)
+- `cutoff_hour`: Decision cutoff hour 0-23 (default: 12)
+- `cutoff_minute`: Decision cutoff minute 0-59 (default: 0)
+- `timezone`: Timezone for cutoff (default: Europe/London)
+
+### 11.4 Response Structure (Analytics)
+
+```json
+{
+  "date_from": "2026-01-01",
+  "date_to": "2026-01-31",
+  "methodology": {
+    "forecast_selection": "Latest eligible forecast published on or before D-1 12:00 Europe/London",
+    "error_sign_convention": "Error = Forecast - Actual (positive = overestimation)",
+    "mape_zero_handling": "Exclude intervals where actual <= 1 MW"
+  },
+  "cutoff_config": {"hour": 12, "minute": 0, "timezone": "Europe/London"},
+  "dataset_provenance": {
+    "actuals_dataset": "Elexon BMRS FUELHH (fuelType=WIND)",
+    "forecasts_dataset": "Elexon BMRS WINDFOR",
+    "expected_intervals": 1488
+  },
+  "accuracy_metrics": {
+    "mae_mw": 0.0,
+    "rmse_mw": 0.0,
+    "mean_error_mw": 0.0,
+    "mape_percent": null,
+    "mape_excluded_count": 0,
+    "mape_included_count": 0
+  },
+  "directional_metrics": { ... },
+  "distribution_metrics": { ... },
+  "coverage_metrics": { ... },
+  "business_insights": { ... }
+}
+```
+
+## 12. Validation and Auditability
+
+### 12.1 Selection Log Output
 
 For each delivery interval, log:
 ```json
@@ -277,7 +343,7 @@ For each delivery interval, log:
 }
 ```
 
-### 11.2 Aggregate Coverage Report
+### 12.2 Aggregate Coverage Report
 
 ```
 January 2026 Day-Ahead Forecast Coverage:
@@ -291,7 +357,7 @@ January 2026 Day-Ahead Forecast Coverage:
 
 ---
 
-## 12. References
+## 13. References
 
 1. EPEX SPOT GB Day-Ahead Market Rules — Gate closure 12:00 D-1
 2. National Grid ESO — Wind Generation Forecast publication schedule

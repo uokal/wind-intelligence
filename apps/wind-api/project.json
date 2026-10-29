@@ -17,9 +17,9 @@
       }
     },
     "test": {
-      "command": "pytest",
+      "command": "PYTHONPATH=apps/wind-api pytest",
       "options": {
-        "cwd": "apps/wind-api"
+        "cwd": "."
       }
     },
     "lint": {

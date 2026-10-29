@@ -154,12 +154,94 @@ Retrieve data quality and coverage metrics for a date range.
 }
 ```
 
+## Analytics Endpoints (Task 04)
+
+### GET `/api/v1/analytics/day-ahead`
+Get day-ahead selected forecasts for each delivery interval based on procurement cutoff.
+
+**Query Parameters:**
+- `from` (optional, default: 2026-01-01): Start date YYYY-MM-DD
+- `to` (optional, default: 2026-01-31): End date YYYY-MM-DD
+- `cutoff_hour` (optional, default: 12): Decision cutoff hour 0-23 (Europe/London)
+- `cutoff_minute` (optional, default: 0): Decision cutoff minute 0-59
+- `timezone` (optional, default: Europe/London): Timezone for cutoff
+
+**Response:**
+```json
+{
+  "date_from": "2026-01-01",
+  "date_to": "2026-01-31",
+  "interval_count": 1488,
+  "cutoff_config": {"hour": 12, "minute": 0, "timezone": "Europe/London"},
+  "methodology": {
+    "forecast_selection": "Latest eligible forecast published on or before D-1 cutoff",
+    "error_sign_convention": "Error = Forecast - Actual (positive = overestimation)",
+    "tie_breaking": "Earliest publish_time, then lowest generation_mw (deterministic)"
+  },
+  "records": [
+    {
+      "delivery_start_utc": "2026-01-01T00:00:00+00:00",
+      "settlement_date": "2026-01-01",
+      "settlement_period": 1,
+      "forecast_generation_mw": 5200.0,
+      "forecast_publish_time_utc": "2025-12-31T10:00:00+00:00",
+      "decision_cutoff_utc": "2025-12-31T12:00:00+00:00",
+      "forecast_age_hours": 2.0,
+      "selection_status": "selected"
+    }
+  ]
+}
+```
+
+### GET `/api/v1/analytics/timeseries`
+Get aligned actual vs forecast time-series with error calculations.
+
+**Query Parameters:** Same as `/day-ahead`
+
+**Response:**
+```json
+{
+  "date_from": "2026-01-01",
+  "date_to": "2026-01-31",
+  "interval_count": 1488,
+  "cutoff_config": {"hour": 12, "minute": 0, "timezone": "Europe/London"},
+  "records": [
+    {
+      "delivery_start_utc": "2026-01-01T00:00:00+00:00",
+      "settlement_date": "2026-01-01",
+      "settlement_period": 1,
+      "actual_generation_mw": 5000.0,
+      "forecast_generation_mw": 5200.0,
+      "forecast_publish_time_utc": "2025-12-31T10:00:00+00:00",
+      "decision_cutoff_utc": "2025-12-31T12:00:00+00:00",
+      "error_mw": 200.0,
+      "absolute_error_mw": 200.0,
+      "percentage_error": 4.0,
+      "alignment_status": "matched"
+    }
+  ]
+}
+```
+
+### GET `/api/v1/analytics/accuracy`
+Get comprehensive forecast accuracy metrics and business insights.
+
+**Query Parameters:** Same as `/day-ahead`
+
+**Response:** Full `AnalyticsResponse` with:
+- `accuracy_metrics`: MAE, RMSE, ME (Bias), MAPE (with zero-actual handling)
+- `directional_metrics`: Over/under estimation counts, volumes, frequencies
+- `distribution_metrics`: Max, median, P90, P95, P99 absolute errors
+- `coverage_metrics`: Matched, missing forecast/actual intervals, coverage %
+- `business_insights`: Systematic bias, key finding, caveats
+
 ## API Documentation
 When the backend runs, interactive OpenAPI docs are at:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
-## Current Implementation Status (Task 03)
+## Current Implementation Status (Task 04)
+
 - ✅ Nx workspace with two apps (`wind-web`, `wind-api`)
 - ✅ React + Vite + Tailwind dashboard with sidebar, top‑nav, dashboard page
 - ✅ FastAPI health endpoint (`GET /api/v1/health`) with CORS & structured logging
@@ -171,9 +253,29 @@ When the backend runs, interactive OpenAPI docs are at:
 - ✅ WINDFOR forecast normalization (multiple versions preserved, publishTime UTC)
 - ✅ Data quality & coverage service (`app/services/wind_data.py`)
 - ✅ Versioned API routes: `/api/v1/wind/actuals`, `/api/v1/wind/forecasts`, `/api/v1/wind/coverage`
-- ✅ Comprehensive Pytest suite (40 tests) covering filtering, parsing, duplicates, coverage, errors
-- ✅ Test fixtures for FUELHH and WINDFOR XML responses
+- ✅ **Day-ahead forecast selection service** (`app/services/forecast_selection.py`)
+  - Configurable procurement cutoff (default 12:00 Europe/London D-1)
+  - Latest eligible forecast selection with deterministic tie-breaking
+  - DST-aware timezone handling (Europe/London with zoneinfo)
+  - Handles: multiple versions, post-cutoff exclusion, duplicates, out-of-order records
+- ✅ **Analytics service** (`app/services/analytics.py`)
+  - MAE, RMSE, Mean Error (Bias), MAPE (ε=1MW zero-actual exclusion)
+  - Over/under estimation counts, volumes, frequencies
+  - Distribution percentiles (Max, Median, P90, P95, P99)
+  - Coverage metrics (matched, missing forecast, missing actual)
+  - Business insights (systematic bias, key findings, caveats)
+- ✅ **Analytics API endpoints** (`app/api/routes/analytics.py`)
+  - `GET /api/v1/analytics/day-ahead`
+  - `GET /api/v1/analytics/timeseries`
+  - `GET /api/v1/analytics/accuracy`
+- ✅ Comprehensive Pytest suite (88 tests) covering:
+  - Forecast selection (cutoff, latest eligible, post-cutoff exclusion, multiple versions, missing, duplicates, tie-breaking, out-of-order, DST)
+  - Actual/forecast alignment (matched, missing forecast, missing actual, zero-actual MAPE)
+  - Accuracy metrics (MAE, RMSE, ME, MAPE, directional, distribution, coverage)
+  - Business insights (over/under/neutral bias, caveats)
+  - API query validation
 - ✅ Ruff linting clean, Pydantic V2 validators
+- ✅ Frontend Vitest, ESLint, TypeScript check, production build all pass
 
 ## AI Disclosure
 This project was developed with AI assistance (Claude/Opencode) for a technical evaluation. All architectural decisions, code review, and validation performed by human.
