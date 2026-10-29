@@ -23,7 +23,7 @@
       }
     },
     "lint": {
-      "command": "echo \"No lint configured\"",
+      "command": "ruff check .",
       "options": {
         "cwd": "apps/wind-api"
       }

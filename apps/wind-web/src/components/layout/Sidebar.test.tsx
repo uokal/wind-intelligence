@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { Sidebar } from '../components/layout/Sidebar';
+import { Sidebar } from './Sidebar';
 import { MemoryRouter } from 'react-router-dom';
 
 test('Sidebar renders navigation', () => {
