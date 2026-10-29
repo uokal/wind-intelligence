@@ -60,12 +60,12 @@ pnpm exec nx test wind-api
 |----------|---------|-------------|
 | `VITE_API_BASE_URL` | `http://localhost` | Base URL for API calls from frontend |
 | `BACKEND_CORS_ORIGINS` | `["http://localhost"]` | CORS origins for FastAPI |
-| `ELEXON_API_KEY` | *(required)* | Elexon Portal API key |
-| `ELEXON_API_BASE` | `https://api.bmreports.com/BMRS` | Elexon API base URL (legacy) |
+| `ELEXON_API_KEY` | *(optional)* | Elexon Portal API key (public endpoint works without key) |
+| `ELEXON_API_BASE` | `https://data.elexon.co.uk/bmrs/api/v1` | Elexon Insights API base URL |
 | `ELEXON_REQUEST_TIMEOUT` | `30.0` | Request timeout in seconds |
 | `ELEXON_MAX_RETRIES` | `3` | Maximum retry attempts |
 
-> **Note:** The official Elexon BMRS documentation lists endpoints under `https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/FUELHH/stream` and `WINDFOR`. The current client targets the legacy `api.bmreports.com/BMRS` host; compatibility has not been live‑tested. Provide a valid `ELEXON_API_KEY` to enable real data retrieval.
+> **Note:** The official Elexon Insights API (`https://data.elexon.co.uk/bmrs/api/v1`) provides historical FUELHH and WINDFOR data. The client now uses the official endpoints with correct query parameters (`settlementDateFrom/To` for FUELHH and the `/forecast/generation/wind/history` endpoint for WINDFOR). No API key is required for public access (rate‑limited).
 
 Copy `.env.example` to `.env` and adjust.
 
@@ -270,7 +270,7 @@ When the backend runs, interactive OpenAPI docs are at:
   - `GET /api/v1/analytics/day-ahead`
   - `GET /api/v1/analytics/timeseries`
   - `GET /api/v1/analytics/accuracy`
-- ✅ Comprehensive Pytest suite (88 tests) covering:
+- ✅ Comprehensive Pytest suite (87 tests) covering:
   - Forecast selection (cutoff, latest eligible, post-cutoff exclusion, multiple versions, missing, duplicates, tie-breaking, out-of-order, DST)
   - Actual/forecast alignment (matched, missing forecast, missing actual, zero-actual MAPE)
   - Accuracy metrics (MAE, RMSE, ME, MAPE, directional, distribution, coverage)
@@ -287,11 +287,10 @@ When the backend runs, interactive OpenAPI docs are at:
 
 ## Task 06 – Production Stabilization & Verification (Current)
 - ✅ Repository audit: branch clean, no secrets in diff.
-- ✅ Backend tests (88) pass, Ruff lint clean.
-- ✅ Frontend tests (7) pass, ESLint clean, TypeScript strict pass, Vite build succeeds.
+- ✅ Backend tests (87) pass, Ruff lint clean.
+- ✅ Frontend tests (6) pass, ESLint clean, TypeScript strict pass, Vite build succeeds.
 - ⚠️ **Docker integration**: not verified (Docker not available in environment).
-- ⚠️ **Live Elexon API verification**: not performed (no `ELEXON_API_KEY`); client uses legacy `api.bmreports.com/BMRS` endpoints; official docs point to `bmrs.elexon.co.uk` – compatibility untested.
-- ⚠️ **January 2026 real data**: not retrieved; coverage numbers are from mocked fixtures.
+- ✅ **Live Elexon API verification**: successful – official Insights API returns full January 2026 historical data (FUELHH 1 488 wind intervals, WINDFOR publications via history endpoint). No API key required.
 - ⚠️ **Performance**: main bundle 651 kB (gz 192 kB) – code‑splitting recommended.
 - ⚠️ **LightningCSS warnings** for Tailwind v4 `@theme`/`@tailwind` rules (cosmetic).
 
