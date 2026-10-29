@@ -176,14 +176,14 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header with controls */}
-      <section className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
+      <section className="bg-card rounded-card border border-subtle shadow-subtle p-4 md:p-6">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Wind Intelligence</h1>
-            <p className="text-gray-600 mt-1">Day-Ahead Wind Generation Analytics</p>
+            <h1 className="text-2xl font-semibold text-heading">Wind Forecast Intelligence</h1>
+            <p className="text-muted text-base mt-1">UK Wind Generation — Day-ahead Forecast Accuracy</p>
           </div>
-          <div className="text-sm text-gray-500 flex flex-wrap gap-4">
-            <span>Data source: <span className="font-medium">Elexon BMRS</span></span>
+          <div className="text-sm text-muted flex flex-wrap gap-4">
+            <span>Data source: <span className="font-medium">Elexon BMRS (FUELHH + WINDFOR)</span></span>
             <span>Timezone: <span className="font-medium">Europe/London</span></span>
             {lastRefresh && (
               <span>Last refresh: <span className="font-medium">{formatDateTime(lastRefresh.toISOString())}</span></span>
@@ -193,7 +193,7 @@ export function Dashboard() {
 
         <form onSubmit={(e) => e.preventDefault()} className="flex flex-col md:flex-row gap-4 items-end flex-wrap">
           <div className="flex-1 min-w-[180px]">
-            <label htmlFor="dateFrom" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="dateFrom" className="block text-sm font-medium text-heading mb-1">
               Start date
             </label>
             <input
@@ -201,12 +201,12 @@ export function Dashboard() {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-subtle rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               required
             />
           </div>
           <div className="flex-1 min-w-[180px]">
-            <label htmlFor="dateTo" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="dateTo" className="block text-sm font-medium text-heading mb-1">
               End date
             </label>
             <input
@@ -214,12 +214,12 @@ export function Dashboard() {
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-subtle rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               required
             />
           </div>
           <div className="flex-1 min-w-[140px]">
-            <label htmlFor="cutoffHour" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="cutoffHour" className="block text-sm font-medium text-heading mb-1">
               Cutoff hour (0-23)
             </label>
             <input
@@ -229,11 +229,11 @@ export function Dashboard() {
               max="23"
               value={cutoffHour}
               onChange={(e) => setCutoffHour(parseInt(e.target.value, 10) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-subtle rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
             />
           </div>
           <div className="flex-1 min-w-[140px]">
-            <label htmlFor="cutoffMinute" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="cutoffMinute" className="block text-sm font-medium text-heading mb-1">
               Cutoff minute (0-59)
             </label>
             <input
@@ -243,18 +243,18 @@ export function Dashboard() {
               max="59"
               value={cutoffMinute}
               onChange={(e) => setCutoffMinute(parseInt(e.target.value, 10) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-subtle rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
             />
           </div>
           <div className="flex-1 min-w-[200px]">
-            <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="timezone" className="block text-sm font-medium text-heading mb-1">
               Timezone
             </label>
             <select
               id="timezone"
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-subtle rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
             >
               <option value="Europe/London">Europe/London</option>
               <option value="UTC">UTC</option>
@@ -265,7 +265,7 @@ export function Dashboard() {
               type="button"
               onClick={handleRefresh}
               disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Loading…' : 'Refresh Data'}
             </button>
@@ -273,7 +273,7 @@ export function Dashboard() {
               type="button"
               onClick={handleFilterChange}
               disabled={isLoading}
-              className="px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              className="px-4 py-2 bg-gray-100 text-heading border border-subtle rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50"
             >
               Apply Filters
             </button>
@@ -399,7 +399,7 @@ export function Dashboard() {
                   type="monotone"
                   dataKey="forecast_generation_mw"
                   name="Forecast (MW)"
-                  stroke="#0d9488"
+                  stroke="#F59E0B"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4 }}
@@ -409,7 +409,7 @@ export function Dashboard() {
                   type="monotone"
                   dataKey="actual_generation_mw"
                   name="Actual (MW)"
-                  stroke="#dc2626"
+                  stroke="#2563EB"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4 }}
@@ -473,7 +473,7 @@ export function Dashboard() {
                   {chartData.map((entry, index) => (
                     <Bar
                       key={index}
-                      fill={entry.error_mw === null ? '#9ca3af' : entry.error_mw > 0 ? '#ef4444' : '#3b82f6'}
+                      fill={entry.error_mw === null ? '#9ca3af' : entry.error_mw > 0 ? '#EF4444' : '#3B82F6'}
                     />
                   ))}
                 </Bar>
@@ -718,7 +718,7 @@ function KPICard({
 }) {
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6 animate-pulse">
+      <div className="bg-card rounded-card border border-subtle shadow-subtle p-4 md:p-6 animate-pulse">
         <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
         <div className="h-8 bg-gray-200 rounded w-1/2 mb-1"></div>
         <div className="h-3 bg-gray-200 rounded w-2/3"></div>
@@ -727,13 +727,13 @@ function KPICard({
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
-      <h3 className="text-sm font-medium text-gray-600 mb-1">{title}</h3>
+    <div className="bg-card rounded-card border border-subtle shadow-subtle p-4 md:p-6">
+      <h3 className="text-sm font-medium text-muted mb-1">{title}</h3>
       <div className="flex items-baseline gap-1 mb-1">
-        <span className={`text-3xl font-bold ${valueColor || 'text-gray-900'}`}>{value !== null && value !== undefined ? formatNumber(value) : '—'}</span>
-        <span className="text-gray-500 text-lg">{unit}</span>
+        <span className={`text-3xl font-semibold ${valueColor || 'text-heading'}`}>{value !== null && value !== undefined ? formatNumber(value) : '—'}</span>
+        <span className="text-muted text-lg">{unit}</span>
       </div>
-      <p className="text-xs text-gray-500">{description}</p>
+      <p className="text-xs text-muted">{description}</p>
     </div>
   );
 }
@@ -752,22 +752,22 @@ function MetricDetail({
   valueColor?: string;
 }) {
   return (
-    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{label}</p>
+    <div className="bg-gray-50 rounded-card border border-subtle p-4">
+      <p className="text-xs font-medium text-muted uppercase tracking-wider mb-1">{label}</p>
       <div className="flex items-baseline gap-1 mb-1">
-        <span className={`text-2xl font-bold ${valueColor || 'text-gray-900'}`}>{value}</span>
-        <span className="text-gray-500">{unit}</span>
+        <span className={`text-2xl font-semibold ${valueColor || 'text-heading'}`}>{value}</span>
+        <span className="text-muted">{unit}</span>
       </div>
-      <p className="text-xs text-gray-500">{description}</p>
+      <p className="text-xs text-muted">{description}</p>
     </div>
   );
 }
 
 function DataQualityCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-center">
-      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
+    <div className="bg-gray-50 rounded-card border border-subtle p-4 text-center">
+      <p className="text-xs font-medium text-muted uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-2xl font-semibold text-heading">{value}</p>
     </div>
   );
 }
