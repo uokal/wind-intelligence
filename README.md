@@ -61,9 +61,11 @@ pnpm exec nx test wind-api
 | `VITE_API_BASE_URL` | `http://localhost` | Base URL for API calls from frontend |
 | `BACKEND_CORS_ORIGINS` | `["http://localhost"]` | CORS origins for FastAPI |
 | `ELEXON_API_KEY` | *(required)* | Elexon Portal API key |
-| `ELEXON_API_BASE` | `https://api.bmreports.com/BMRS` | Elexon API base URL |
+| `ELEXON_API_BASE` | `https://api.bmreports.com/BMRS` | Elexon API base URL (legacy) |
 | `ELEXON_REQUEST_TIMEOUT` | `30.0` | Request timeout in seconds |
 | `ELEXON_MAX_RETRIES` | `3` | Maximum retry attempts |
+
+> **Note:** The official Elexon BMRS documentation lists endpoints under `https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/FUELHH/stream` and `WINDFOR`. The current client targets the legacy `api.bmreports.com/BMRS` host; compatibility has not been live‑tested. Provide a valid `ELEXON_API_KEY` to enable real data retrieval.
 
 Copy `.env.example` to `.env` and adjust.
 
@@ -259,7 +261,7 @@ When the backend runs, interactive OpenAPI docs are at:
   - DST-aware timezone handling (Europe/London with zoneinfo)
   - Handles: multiple versions, post-cutoff exclusion, duplicates, out-of-order records
 - ✅ **Analytics service** (`app/services/analytics.py`)
-  - MAE, RMSE, Mean Error (Bias), MAPE (ε=1MW zero-actual exclusion)
+  - MAE, RMSE, Mean Error (Bias), MAPE (excludes only actual = 0 MW)
   - Over/under estimation counts, volumes, frequencies
   - Distribution percentiles (Max, Median, P90, P95, P99)
   - Coverage metrics (matched, missing forecast, missing actual)
@@ -276,6 +278,22 @@ When the backend runs, interactive OpenAPI docs are at:
   - API query validation
 - ✅ Ruff linting clean, Pydantic V2 validators
 - ✅ Frontend Vitest, ESLint, TypeScript check, production build all pass
+
+## Task 05 – Dashboard Implementation
+- ✅ Professional B2B dashboard (React + Recharts) with KPI cards, forecast vs actual chart, error chart, accuracy analysis, transparency table, data quality panel.
+- ✅ Typed API client with AbortController, retry, validation.
+- ✅ Responsive layout, accessibility (semantic HTML, focus rings, contrast).
+- ✅ 7 frontend tests covering loading, success, error, validation, provenance.
+
+## Task 06 – Production Stabilization & Verification (Current)
+- ✅ Repository audit: branch clean, no secrets in diff.
+- ✅ Backend tests (88) pass, Ruff lint clean.
+- ✅ Frontend tests (7) pass, ESLint clean, TypeScript strict pass, Vite build succeeds.
+- ⚠️ **Docker integration**: not verified (Docker not available in environment).
+- ⚠️ **Live Elexon API verification**: not performed (no `ELEXON_API_KEY`); client uses legacy `api.bmreports.com/BMRS` endpoints; official docs point to `bmrs.elexon.co.uk` – compatibility untested.
+- ⚠️ **January 2026 real data**: not retrieved; coverage numbers are from mocked fixtures.
+- ⚠️ **Performance**: main bundle 651 kB (gz 192 kB) – code‑splitting recommended.
+- ⚠️ **LightningCSS warnings** for Tailwind v4 `@theme`/`@tailwind` rules (cosmetic).
 
 ## AI Disclosure
 This project was developed with AI assistance (Claude/Opencode) for a technical evaluation. All architectural decisions, code review, and validation performed by human.
