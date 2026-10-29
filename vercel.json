@@ -1,0 +1,13 @@
+{
+  "buildCommand": "pnpm nx build wind-web",
+  "outputDirectory": "dist/apps/wind-web",
+  "framework": "vite",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "devCommand": "pnpm nx serve wind-web",
+  "env": {
+    "VITE_API_BASE_URL": "https://wind-api.herokuapp.com"
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
