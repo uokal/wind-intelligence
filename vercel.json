@@ -5,7 +5,7 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "devCommand": "pnpm nx serve wind-web",
   "env": {
-    "VITE_API_BASE_URL": "https://wind-api.herokuapp.com"
+    "VITE_API_BASE_URL": ""
   },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
