@@ -1,6 +1,6 @@
 {
-  "buildCommand": "pnpm install --frozen-lockfile && pnpm nx build wind-web",
-  "outputDirectory": "dist/apps/wind-web",
+  "buildCommand": "pnpm nx build wind-web",
+  "outputDirectory": "dist",
   "framework": "vite",
   "installCommand": "pnpm install --frozen-lockfile",
   "devCommand": "pnpm nx serve wind-web",

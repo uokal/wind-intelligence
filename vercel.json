@@ -1,6 +1,6 @@
 {
   "buildCommand": "pnpm nx build wind-web",
-  "outputDirectory": "dist/apps/wind-web",
+  "outputDirectory": "apps/wind-web/dist",
   "framework": "vite",
   "installCommand": "pnpm install --frozen-lockfile",
   "devCommand": "pnpm nx serve wind-web",
@@ -8,6 +8,9 @@
     "VITE_API_BASE_URL": ""
   },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

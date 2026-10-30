@@ -6,9 +6,11 @@
   "targets": {
     "build": {
       "executor": "@nx/vite:build",
-      "outputs": ["{projectRoot}/dist"],
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
       "options": {
-        "outputPath": "dist/apps/wind-web"
+        "outputPath": "apps/wind-web/dist"
       }
     },
     "serve": {
@@ -28,7 +30,9 @@
     "lint": {
       "executor": "@nx/eslint:lint",
       "options": {
-        "lintFilePatterns": ["apps/wind-web/**/*.{ts,tsx,js,jsx}"]
+        "lintFilePatterns": [
+          "apps/wind-web/**/*.{ts,tsx,js,jsx}"
+        ]
       }
     }
   }

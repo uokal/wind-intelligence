@@ -112,8 +112,8 @@ vercel
 # Follow prompts:
 # - Link to existing project or create new: wind-web
 # - Root directory: ./apps/wind-web
-# - Build command: pnpm install --frozen-lockfile && pnpm nx build wind-web
-# - Output directory: dist/apps/wind-web
+# - Build command: pnpm nx build wind-web
+# - Output directory: dist
 # - Development command: pnpm nx serve wind-web
 
 # Set environment variables:
@@ -124,6 +124,15 @@ vercel env add VITE_API_BASE_URL production
 vercel --prod
 ```
 Note the deployed URL (e.g., `https://wind-web.vercel.app`).
+
+The frontend Nx target writes to `apps/wind-web/dist` at the repository root.
+With Vercel Root Directory set to `apps/wind-web`, use Output Directory `dist`
+and Build Command `pnpm nx build wind-web`. Enable access to files outside the
+Root Directory so the workspace configuration and dependencies are available.
+The app's `vercel.json` supplies these build/output settings; remove conflicting
+dashboard overrides. If the Vercel Root Directory is the repository root instead,
+the root `vercel.json` uses Output Directory `apps/wind-web/dist`.
+Dependency installation runs once through `installCommand`.
 
 ### 3. Update Backend CORS
 After frontend deployment, update the backend CORS origin:
