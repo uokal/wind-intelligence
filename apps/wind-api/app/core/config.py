@@ -1,7 +1,8 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
 import json
-import os
+from typing import List, Union
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -10,17 +11,21 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Wind Analytics API"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
-    BACKEND_CORS_ORIGINS: List[str] = []
+    # Including str lets pydantic-settings pass non-JSON environment values to
+    # the validator instead of failing during its automatic JSON decoding.
+    BACKEND_CORS_ORIGINS: Union[List[str], str] = []
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        if not self.BACKEND_CORS_ORIGINS:
-            cors_env = os.getenv("BACKEND_CORS_ORIGINS", "")
-            if cors_env:
-                try:
-                    self.BACKEND_CORS_ORIGINS = json.loads(cors_env)
-                except json.JSONDecodeError:
-                    self.BACKEND_CORS_ORIGINS = [o.strip() for o in cors_env.split(",") if o.strip()]
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value):
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return []
+            if value.startswith("["):
+                return json.loads(value)
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value
 
 
 settings = Settings()

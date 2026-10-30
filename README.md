@@ -491,3 +491,9 @@ The frontend Vercel configuration forwards `/api/:path*` to
 Keep `VITE_API_BASE_URL` unset or empty for this same-origin proxy setup.
 Local development continues to use the existing Vite proxy to port 8000.
 Check the deployed backend at `/api/v1/health` before validating dashboard data.
+
+The backend accepts `BACKEND_CORS_ORIGINS` as an empty value, a JSON list,
+or a comma-separated list of origins. Values are normalised before FastAPI
+startup. For direct browser access, include the frontend origin, for example
+`["https://wind-web-six.vercel.app"]`. The frontend proxy does not require
+cross-origin browser requests.
