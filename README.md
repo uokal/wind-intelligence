@@ -482,3 +482,10 @@ This project was developed with AI assistance (Claude/Opencode) for a technical 
 
 ## License
 MIT
+## Frontend API proxy
+
+The frontend Vercel configuration forwards `/api/:path*` to
+`https://wind-intelligence-taupe.vercel.app/api/v1/:path*` before the SPA fallback.
+Keep `VITE_API_BASE_URL` unset or empty for this same-origin proxy setup.
+Local development continues to use the existing Vite proxy to port 8000.
+Check the deployed backend at `/api/v1/health` before validating dashboard data.
