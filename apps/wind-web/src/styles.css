@@ -402,3 +402,6 @@ input, select, textarea {
 .transition-normal {
   transition: all 0.2s ease;
 }
+section[aria-labelledby] {
+  scroll-margin-top: 8rem;
+}

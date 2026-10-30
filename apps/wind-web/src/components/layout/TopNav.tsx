@@ -8,7 +8,12 @@ interface TopNavProps {
   loading: boolean;
 }
 
-export function TopNav({ apiConnected, lastRefresh, onRefresh, loading }: TopNavProps) {
+export function TopNav({
+  apiConnected,
+  lastRefresh,
+  onRefresh,
+  loading,
+}: TopNavProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -19,14 +24,18 @@ export function TopNav({ apiConnected, lastRefresh, onRefresh, loading }: TopNav
   return (
     <header className="sticky top-0 z-40 bg-card border-b border-border shadow-subtle">
       <div className="container">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 py-3">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent">
               <Wind className="icon-md text-white" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="page-title">Wind Intelligence</h1>
-              <p className="text-xs text-text-muted">UK Day-Ahead Forecast Analytics</p>
+              <p className="text-xl font-semibold text-heading">
+                Wind Intelligence
+              </p>
+              <p className="text-xs text-text-muted">
+                UK Day-Ahead Forecast Analytics
+              </p>
             </div>
           </div>
 
@@ -39,7 +48,11 @@ export function TopNav({ apiConnected, lastRefresh, onRefresh, loading }: TopNav
             <div className="flex items-center gap-1.5 text-sm text-text-muted">
               <Info className="icon-sm" aria-hidden="true" />
               <time dateTime={currentTime.toISOString()}>
-                {currentTime.toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {currentTime.toLocaleDateString('en-GB', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                })}
               </time>
             </div>
 
@@ -48,7 +61,10 @@ export function TopNav({ apiConnected, lastRefresh, onRefresh, loading }: TopNav
                 className={`flex h-2 w-2 rounded-full ${apiConnected ? 'bg-success' : 'bg-error'}`}
                 aria-hidden="true"
               />
-              <span className="text-sm font-medium text-text-muted hidden sm:inline">
+              <span
+                role="status"
+                className="text-sm font-medium text-text-muted"
+              >
                 {apiConnected ? 'API Connected' : 'API Disconnected'}
               </span>
             </div>
@@ -57,7 +73,10 @@ export function TopNav({ apiConnected, lastRefresh, onRefresh, loading }: TopNav
               <div className="hidden md:flex items-center gap-1.5 text-sm text-text-muted">
                 <RefreshCw className="icon-sm" aria-hidden="true" />
                 <time dateTime={lastRefresh.toISOString()}>
-                  {lastRefresh.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                  {lastRefresh.toLocaleTimeString('en-GB', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </time>
               </div>
             )}
@@ -69,7 +88,10 @@ export function TopNav({ apiConnected, lastRefresh, onRefresh, loading }: TopNav
               className="btn btn-primary gap-2"
               aria-label="Refresh data"
             >
-              <RefreshCw className={`icon-sm ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+              <RefreshCw
+                className={`icon-sm ${loading ? 'animate-spin' : ''}`}
+                aria-hidden="true"
+              />
               <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>

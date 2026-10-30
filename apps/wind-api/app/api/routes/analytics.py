@@ -46,6 +46,23 @@ class AnalyticsParams(BaseModel):
         return v
 
 
+def get_analytics_params(
+    date_from: str = Query("2026-01-01", alias="from"),
+    date_to: str = Query("2026-01-31", alias="to"),
+    cutoff_hour: int = Query(12, ge=0, le=23),
+    cutoff_minute: int = Query(0, ge=0, le=59),
+    timezone: str = Query("Europe/London"),
+) -> AnalyticsParams:
+    # Explicit query binding preserves public aliases with Pydantic dependencies.
+    return AnalyticsParams(
+        date_from=date_from,
+        date_to=date_to,
+        cutoff_hour=cutoff_hour,
+        cutoff_minute=cutoff_minute,
+        timezone=timezone,
+    )
+
+
 def get_elexon_client() -> ElexonClient:
     return ElexonClient()
 
@@ -138,7 +155,7 @@ def _analytics_to_schema(a: AnalyticsResponse) -> AnalyticsResponseSchema:
     summary="Get day-ahead selected forecasts for each delivery interval",
 )
 async def get_day_ahead_forecasts(
-    params: AnalyticsParams = Depends(),
+    params: AnalyticsParams = Depends(get_analytics_params),
     client: ElexonClient = Depends(get_elexon_client),
 ):
     """
@@ -193,7 +210,7 @@ async def get_day_ahead_forecasts(
     summary="Get aligned actual vs forecast time-series with errors",
 )
 async def get_timeseries(
-    params: AnalyticsParams = Depends(),
+    params: AnalyticsParams = Depends(get_analytics_params),
     client: ElexonClient = Depends(get_elexon_client),
 ):
     """
@@ -238,7 +255,7 @@ async def get_timeseries(
     summary="Get comprehensive forecast accuracy metrics",
 )
 async def get_accuracy(
-    params: AnalyticsParams = Depends(),
+    params: AnalyticsParams = Depends(get_analytics_params),
     client: ElexonClient = Depends(get_elexon_client),
 ):
     """

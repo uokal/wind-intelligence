@@ -12,13 +12,15 @@ vi.mock('../services/api', () => ({
     getCoverage: vi.fn(),
     getHealth: vi.fn(),
   },
-  createApiParams: vi.fn((dateFrom, dateTo, cutoffHour, cutoffMinute, timezone) => ({
-    date_from: dateFrom,
-    date_to: dateTo,
-    cutoff_hour: cutoffHour,
-    cutoff_minute: cutoffMinute,
-    timezone,
-  })),
+  createApiParams: vi.fn(
+    (dateFrom, dateTo, cutoffHour, cutoffMinute, timezone) => ({
+      date_from: dateFrom,
+      date_to: dateTo,
+      cutoff_hour: cutoffHour,
+      cutoff_minute: cutoffMinute,
+      timezone,
+    }),
+  ),
   validateDateRange: vi.fn(() => null),
 }));
 
@@ -27,7 +29,8 @@ const mockAccuracyResponse = {
   date_to: '2026-01-31',
   methodology: {
     forecast_selection: 'Latest eligible forecast',
-    error_sign_convention: 'Error = Forecast - Actual (positive = overestimation)',
+    error_sign_convention:
+      'Error = Forecast - Actual (positive = overestimation)',
     mape_zero_handling: 'Exclude intervals where actual == 0 MW',
     aggregation_level: 'Per settlement period',
   },
@@ -74,7 +77,8 @@ const mockAccuracyResponse = {
     bias_magnitude_mw: 45.23,
     bias_direction: 'positive',
     higher_error_periods: ['periods_with_extreme_errors'],
-    key_finding: 'Forecasts systematically overestimate wind generation by 45.2 MW on average.',
+    key_finding:
+      'Forecasts systematically overestimate wind generation by 45.2 MW on average.',
     caveats: ['Test caveat 1', 'Test caveat 2'],
   },
 };
@@ -141,7 +145,7 @@ function renderDashboard() {
   return render(
     <MemoryRouter initialEntries={['/']}>
       <Dashboard />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -151,27 +155,31 @@ beforeEach(() => {
 
 describe('Dashboard', () => {
   test('renders dashboard title and controls', () => {
-    api.getAccuracy.mockResolvedValue(mockAccuracyResponse);
-    api.getTimeSeries.mockResolvedValue(mockTimeSeriesResponse);
-    api.getDayAheadForecasts.mockResolvedValue(mockDayAheadResponse);
-    api.getCoverage.mockResolvedValue(mockCoverageResponse);
+    vi.mocked(api.getAccuracy).mockResolvedValue(mockAccuracyResponse);
+    vi.mocked(api.getTimeSeries).mockResolvedValue(mockTimeSeriesResponse);
+    vi.mocked(api.getDayAheadForecasts).mockResolvedValue(mockDayAheadResponse);
+    vi.mocked(api.getCoverage).mockResolvedValue(mockCoverageResponse);
 
     renderDashboard();
 
     expect(screen.getByText('Wind Intelligence')).toBeInTheDocument();
-    expect(screen.getByText('UK Day-Ahead Forecast Analytics')).toBeInTheDocument();
+    expect(
+      screen.getByText('UK Day-Ahead Forecast Analytics'),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText('Start date')).toBeInTheDocument();
     expect(screen.getByLabelText('End date')).toBeInTheDocument();
     expect(screen.getByLabelText('Cutoff hour (0-23)')).toBeInTheDocument();
     expect(screen.getByLabelText('Cutoff minute (0-59)')).toBeInTheDocument();
-    expect(screen.getByText('Elexon BMRS (FUELHH + WINDFOR)')).toBeInTheDocument();
+    expect(
+      screen.getByText('Elexon BMRS (FUELHH + WINDFOR)'),
+    ).toBeInTheDocument();
   });
 
   test('successful analytics response renders KPI values', async () => {
-    api.getAccuracy.mockResolvedValue(mockAccuracyResponse);
-    api.getTimeSeries.mockResolvedValue(mockTimeSeriesResponse);
-    api.getDayAheadForecasts.mockResolvedValue(mockDayAheadResponse);
-    api.getCoverage.mockResolvedValue(mockCoverageResponse);
+    vi.mocked(api.getAccuracy).mockResolvedValue(mockAccuracyResponse);
+    vi.mocked(api.getTimeSeries).mockResolvedValue(mockTimeSeriesResponse);
+    vi.mocked(api.getDayAheadForecasts).mockResolvedValue(mockDayAheadResponse);
+    vi.mocked(api.getCoverage).mockResolvedValue(mockCoverageResponse);
 
     renderDashboard();
 
@@ -184,23 +192,26 @@ describe('Dashboard', () => {
   });
 
   test('API failure shows error message', async () => {
-    api.getAccuracy.mockRejectedValue(new Error('Network error'));
-    api.getTimeSeries.mockRejectedValue(new Error('Network error'));
-    api.getDayAheadForecasts.mockRejectedValue(new Error('Network error'));
-    api.getCoverage.mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.getAccuracy).mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.getTimeSeries).mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.getDayAheadForecasts).mockRejectedValue(
+      new Error('Network error'),
+    );
+    vi.mocked(api.getCoverage).mockRejectedValue(new Error('Network error'));
 
     renderDashboard();
 
     await waitFor(() => {
       expect(screen.getByText(/Some requests failed/)).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent('API Disconnected');
     });
   });
 
   test('error convention explanation is displayed in header', async () => {
-    api.getAccuracy.mockResolvedValue(mockAccuracyResponse);
-    api.getTimeSeries.mockResolvedValue(mockTimeSeriesResponse);
-    api.getDayAheadForecasts.mockResolvedValue(mockDayAheadResponse);
-    api.getCoverage.mockResolvedValue(mockCoverageResponse);
+    vi.mocked(api.getAccuracy).mockResolvedValue(mockAccuracyResponse);
+    vi.mocked(api.getTimeSeries).mockResolvedValue(mockTimeSeriesResponse);
+    vi.mocked(api.getDayAheadForecasts).mockResolvedValue(mockDayAheadResponse);
+    vi.mocked(api.getCoverage).mockResolvedValue(mockCoverageResponse);
 
     renderDashboard();
 
@@ -210,15 +221,17 @@ describe('Dashboard', () => {
   });
 
   test('data source is displayed in header', async () => {
-    api.getAccuracy.mockResolvedValue(mockAccuracyResponse);
-    api.getTimeSeries.mockResolvedValue(mockTimeSeriesResponse);
-    api.getDayAheadForecasts.mockResolvedValue(mockDayAheadResponse);
-    api.getCoverage.mockResolvedValue(mockCoverageResponse);
+    vi.mocked(api.getAccuracy).mockResolvedValue(mockAccuracyResponse);
+    vi.mocked(api.getTimeSeries).mockResolvedValue(mockTimeSeriesResponse);
+    vi.mocked(api.getDayAheadForecasts).mockResolvedValue(mockDayAheadResponse);
+    vi.mocked(api.getCoverage).mockResolvedValue(mockCoverageResponse);
 
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText('Elexon BMRS (FUELHH + WINDFOR)')).toBeInTheDocument();
+      expect(
+        screen.getByText('Elexon BMRS (FUELHH + WINDFOR)'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -277,10 +290,10 @@ describe('Dashboard', () => {
       missing_forecast_intervals: 0,
     };
 
-    api.getAccuracy.mockResolvedValue(emptyAccuracy);
-    api.getTimeSeries.mockResolvedValue(emptyTimeSeries);
-    api.getDayAheadForecasts.mockResolvedValue(emptyDayAhead);
-    api.getCoverage.mockResolvedValue(emptyCoverage);
+    vi.mocked(api.getAccuracy).mockResolvedValue(emptyAccuracy);
+    vi.mocked(api.getTimeSeries).mockResolvedValue(emptyTimeSeries);
+    vi.mocked(api.getDayAheadForecasts).mockResolvedValue(emptyDayAhead);
+    vi.mocked(api.getCoverage).mockResolvedValue(emptyCoverage);
 
     renderDashboard();
 
@@ -290,10 +303,10 @@ describe('Dashboard', () => {
   });
 
   test('Elexon timeout shows error', async () => {
-    api.getAccuracy.mockRejectedValue(new Error('Timeout'));
-    api.getTimeSeries.mockRejectedValue(new Error('Timeout'));
-    api.getDayAheadForecasts.mockRejectedValue(new Error('Timeout'));
-    api.getCoverage.mockRejectedValue(new Error('Timeout'));
+    vi.mocked(api.getAccuracy).mockRejectedValue(new Error('Timeout'));
+    vi.mocked(api.getTimeSeries).mockRejectedValue(new Error('Timeout'));
+    vi.mocked(api.getDayAheadForecasts).mockRejectedValue(new Error('Timeout'));
+    vi.mocked(api.getCoverage).mockRejectedValue(new Error('Timeout'));
 
     renderDashboard();
 
@@ -304,11 +317,11 @@ describe('Dashboard', () => {
 
   test('HTTP 429 rate limit shows error', async () => {
     const rateLimitError = new Error('Rate limited');
-    (rateLimitError as any).status = 429;
-    api.getAccuracy.mockRejectedValue(rateLimitError);
-    api.getTimeSeries.mockRejectedValue(rateLimitError);
-    api.getDayAheadForecasts.mockRejectedValue(rateLimitError);
-    api.getCoverage.mockRejectedValue(rateLimitError);
+    Object.assign(rateLimitError, { status: 429 });
+    vi.mocked(api.getAccuracy).mockRejectedValue(rateLimitError);
+    vi.mocked(api.getTimeSeries).mockRejectedValue(rateLimitError);
+    vi.mocked(api.getDayAheadForecasts).mockRejectedValue(rateLimitError);
+    vi.mocked(api.getCoverage).mockRejectedValue(rateLimitError);
 
     renderDashboard();
 
@@ -319,11 +332,11 @@ describe('Dashboard', () => {
 
   test('HTTP 500 upstream error shows error', async () => {
     const serverError = new Error('Internal Server Error');
-    (serverError as any).status = 500;
-    api.getAccuracy.mockRejectedValue(serverError);
-    api.getTimeSeries.mockRejectedValue(serverError);
-    api.getDayAheadForecasts.mockRejectedValue(serverError);
-    api.getCoverage.mockRejectedValue(serverError);
+    Object.assign(serverError, { status: 500 });
+    vi.mocked(api.getAccuracy).mockRejectedValue(serverError);
+    vi.mocked(api.getTimeSeries).mockRejectedValue(serverError);
+    vi.mocked(api.getDayAheadForecasts).mockRejectedValue(serverError);
+    vi.mocked(api.getCoverage).mockRejectedValue(serverError);
 
     renderDashboard();
 
@@ -367,16 +380,18 @@ describe('Dashboard', () => {
       ],
     };
 
-    api.getAccuracy.mockResolvedValue(mockAccuracyResponse);
-    api.getTimeSeries.mockResolvedValue(timeSeriesMissingForecast);
-    api.getDayAheadForecasts.mockResolvedValue(dayAheadMissing);
-    api.getCoverage.mockResolvedValue(mockCoverageResponse);
+    vi.mocked(api.getAccuracy).mockResolvedValue(mockAccuracyResponse);
+    vi.mocked(api.getTimeSeries).mockResolvedValue(timeSeriesMissingForecast);
+    vi.mocked(api.getDayAheadForecasts).mockResolvedValue(dayAheadMissing);
+    vi.mocked(api.getCoverage).mockResolvedValue(mockCoverageResponse);
 
     renderDashboard();
 
     await waitFor(() => {
       // The transparency table shows selection status label
-      expect(screen.getByText('No eligible forecast (after cutoff)')).toBeInTheDocument();
+      expect(
+        screen.getByText('No eligible forecast (after cutoff)'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -400,17 +415,19 @@ describe('Dashboard', () => {
       ],
     };
 
-    api.getAccuracy.mockResolvedValue(mockAccuracyResponse);
-    api.getTimeSeries.mockResolvedValue(timeSeriesMissingActual);
-    api.getDayAheadForecasts.mockResolvedValue(mockDayAheadResponse);
-    api.getCoverage.mockResolvedValue(mockCoverageResponse);
+    vi.mocked(api.getAccuracy).mockResolvedValue(mockAccuracyResponse);
+    vi.mocked(api.getTimeSeries).mockResolvedValue(timeSeriesMissingActual);
+    vi.mocked(api.getDayAheadForecasts).mockResolvedValue(mockDayAheadResponse);
+    vi.mocked(api.getCoverage).mockResolvedValue(mockCoverageResponse);
 
     renderDashboard();
 
     await waitFor(() => {
       // The chart area shows gaps; there is no explicit "Missing actual" text.
       // Verify that the chart renders without error.
-      expect(screen.getByText('Forecast vs Actual Generation')).toBeInTheDocument();
+      expect(
+        screen.getByText('Forecast vs Actual Generation'),
+      ).toBeInTheDocument();
     });
   });
 });
