@@ -1,17 +1,9 @@
 {
-  "buildCommand": "pip install -r requirements.txt",
-  "devCommand": "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
-  "installCommand": "pip install -r requirements.txt",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
   "functions": {
-    "api/index.py": {
-      "maxDuration": 30,
-      "runtime": "python3.12"
+    "app/main.py": {
+      "maxDuration": 30
     }
-  },
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.py"
-    }
-  ]
+  }
 }

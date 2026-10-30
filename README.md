@@ -88,7 +88,9 @@ vercel
 # Follow prompts:
 # - Link to existing project or create new: wind-api
 # - Root directory: ./apps/wind-api
-# - Build command: pip install -r requirements.txt
+# - Framework Preset: FastAPI
+# - Build command: leave the override disabled
+# - Install command: leave the override disabled (requirements.txt is detected)
 # - Output directory: (leave empty)
 # - Development command: uvicorn app.main:app --reload
 
@@ -104,6 +106,13 @@ vercel env add ELEXON_API_BASE production
 vercel --prod
 ```
 Note the deployed URL (e.g., `https://wind-api.vercel.app`).
+
+The backend uses Vercel's native FastAPI preset with the existing `app/main.py`
+entrypoint. Keep Root Directory set to `apps/wind-api`, Build Command and Output
+Directory overrides disabled. Python 3.12 is selected by `.python-version`.
+Do not add `"runtime": "python3.12"` under `functions`; that field is for custom
+runtime packages. Native framework routing preserves `/api/v1/*` and `/docs`
+without a catch-all rewrite to `api/index.py`.
 
 ### 2. Deploy Frontend (wind-web)
 ```bash
