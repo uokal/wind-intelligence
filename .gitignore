@@ -75,3 +75,6 @@ cache/
 
 vite.config.*.timestamp*
 test-output
+
+# Task 12 generated demo media and recording evidence
+/demo/output/
