@@ -1,23 +1,78 @@
-export function TopNav() {
+import { Wind, Database, RefreshCw, Info } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+interface TopNavProps {
+  apiConnected: boolean;
+  lastRefresh: Date | null;
+  onRefresh: () => void;
+  loading: boolean;
+}
+
+export function TopNav({ apiConnected, lastRefresh, onRefresh, loading }: TopNavProps) {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 sticky top-0 z-10" role="banner">
-      <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl md:text-2xl font-semibold text-slate-900">Wind Power Forecast Analytics</h1>
-          <span className="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200">
-            UK Day-Ahead Procurement
-          </span>
-        </div>
-        <div className="flex items-center gap-4 text-sm text-slate-500">
-          <span className="hidden sm:inline">Data: Elexon BMRS (FUELHH + WINDFOR)</span>
-          <span className="flex items-center gap-1">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <time dateTime={new Date().toISOString()}>
-              {new Date().toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </time>
-          </span>
+    <header className="sticky top-0 z-40 bg-card border-b border-border shadow-subtle">
+      <div className="container">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent">
+              <Wind className="icon-md text-white" aria-hidden="true" />
+            </div>
+            <div>
+              <h1 className="page-title">Wind Intelligence</h1>
+              <p className="text-xs text-text-muted">UK Day-Ahead Forecast Analytics</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-accent-light text-accent border border-accent-light">
+              <Database className="icon-sm" aria-hidden="true" />
+              Elexon BMRS
+            </div>
+
+            <div className="flex items-center gap-1.5 text-sm text-text-muted">
+              <Info className="icon-sm" aria-hidden="true" />
+              <time dateTime={currentTime.toISOString()}>
+                {currentTime.toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </time>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`flex h-2 w-2 rounded-full ${apiConnected ? 'bg-success' : 'bg-error'}`}
+                aria-hidden="true"
+              />
+              <span className="text-sm font-medium text-text-muted hidden sm:inline">
+                {apiConnected ? 'API Connected' : 'API Disconnected'}
+              </span>
+            </div>
+
+            {lastRefresh && (
+              <div className="hidden md:flex items-center gap-1.5 text-sm text-text-muted">
+                <RefreshCw className="icon-sm" aria-hidden="true" />
+                <time dateTime={lastRefresh.toISOString()}>
+                  {lastRefresh.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                </time>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={loading}
+              className="btn btn-primary gap-2"
+              aria-label="Refresh data"
+            >
+              <RefreshCw className={`icon-sm ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
         </div>
       </div>
     </header>

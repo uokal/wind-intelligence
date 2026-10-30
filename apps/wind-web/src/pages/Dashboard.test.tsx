@@ -158,13 +158,13 @@ describe('Dashboard', () => {
 
     renderDashboard();
 
-    expect(screen.getByText('Wind Forecast Intelligence')).toBeInTheDocument();
-    expect(screen.getByText('UK Wind Generation — Day-ahead Forecast Accuracy')).toBeInTheDocument();
+    expect(screen.getByText('Wind Intelligence')).toBeInTheDocument();
+    expect(screen.getByText('UK Day-Ahead Forecast Analytics')).toBeInTheDocument();
     expect(screen.getByLabelText('Start date')).toBeInTheDocument();
     expect(screen.getByLabelText('End date')).toBeInTheDocument();
     expect(screen.getByLabelText('Cutoff hour (0-23)')).toBeInTheDocument();
     expect(screen.getByLabelText('Cutoff minute (0-59)')).toBeInTheDocument();
-    expect(screen.getByText(/Elexon BMRS/)).toBeInTheDocument();
+    expect(screen.getByText('Elexon BMRS (FUELHH + WINDFOR)')).toBeInTheDocument();
   });
 
   test('successful analytics response renders KPI values', async () => {
@@ -218,7 +218,7 @@ describe('Dashboard', () => {
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText(/Elexon BMRS/)).toBeInTheDocument();
+      expect(screen.getByText('Elexon BMRS (FUELHH + WINDFOR)')).toBeInTheDocument();
     });
   });
 

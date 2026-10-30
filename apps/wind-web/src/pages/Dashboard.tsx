@@ -12,6 +12,18 @@ import {
   Bar,
   ReferenceLine,
 } from 'recharts';
+import {
+  Calendar,
+  Clock,
+  Globe,
+  Filter,
+  RotateCcw,
+  ChevronDown,
+  AlertCircle,
+  Info,
+  Database,
+  Wind,
+} from 'lucide-react';
 import { api, createApiParams, validateDateRange } from '../services/api';
 import type { AnalyticsParams, AnalyticsResponse, TimeSeriesResponse, DayAheadForecastsResponse, CoverageResponse } from '../types/api';
 import {
@@ -39,6 +51,19 @@ const DEFAULT_CUTOFF_HOUR = 12;
 const DEFAULT_CUTOFF_MINUTE = 0;
 const DEFAULT_TIMEZONE = 'Europe/London';
 
+const TOOLTIP_STYLE = {
+  backgroundColor: '#fff',
+  border: '1px solid #E2E8F0',
+  borderRadius: '8px',
+  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+};
+
+const AXIS_STYLE = {
+  tick: { fontSize: 11, fill: '#64748B' },
+  axisLine: { stroke: '#E2E8F0' },
+  tickLine: { stroke: '#E2E8F0' },
+};
+
 export function Dashboard() {
   const [dateFrom, setDateFrom] = useState('2026-01-01');
   const [dateTo, setDateTo] = useState('2026-01-31');
@@ -46,6 +71,7 @@ export function Dashboard() {
   const [cutoffMinute, setCutoffMinute] = useState(DEFAULT_CUTOFF_MINUTE);
   const [timezone, setTimezone] = useState(DEFAULT_TIMEZONE);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [showMethodology, setShowMethodology] = useState(false);
 
   const [data, setData] = useState<DashboardData>({
     accuracy: null,
@@ -147,7 +173,6 @@ export function Dashboard() {
     };
   }, [fetchAll]);
 
-  // Derived data for charts
   const chartData = selectedDay && data.timeSeries
     ? data.timeSeries.records.filter((r) => r.settlement_date === selectedDay)
     : data.timeSeries?.records ?? [];
@@ -164,7 +189,7 @@ export function Dashboard() {
   const accuracy = kpiData?.accuracy_metrics;
   const directional = kpiData?.directional_metrics;
   const distribution = kpiData?.distribution_metrics;
-  const coverage = kpiData?.coverage_metrics;
+  const coverageMetrics = kpiData?.coverage_metrics;
   const insights = kpiData?.business_insights;
   const methodology = kpiData?.methodology;
   const cutoffConfig = kpiData?.cutoff_config;
@@ -173,181 +198,216 @@ export function Dashboard() {
   const isLoading = Object.values(loadingStates).some((s) => s === 'loading');
   const hasData = !!data.accuracy || !!data.timeSeries;
 
+  const apiConnected = loadingStates.accuracy === 'success' || loadingStates.timeSeries === 'success' || loadingStates.coverage === 'success';
+
   return (
-    <div className="space-y-6">
-      {/* Header with controls */}
-      <section className="bg-card rounded-card border border-subtle shadow-subtle p-4 md:p-6">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-heading">Wind Forecast Intelligence</h1>
-            <p className="text-muted text-base mt-1">UK Wind Generation — Day-ahead Forecast Accuracy</p>
-          </div>
-          <div className="text-sm text-muted flex flex-wrap gap-4">
-            <span>Data source: <span className="font-medium">Elexon BMRS (FUELHH + WINDFOR)</span></span>
-            <span>Timezone: <span className="font-medium">Europe/London</span></span>
-            {lastRefresh && (
-              <span>Last refresh: <span className="font-medium">{formatDateTime(lastRefresh.toISOString())}</span></span>
-            )}
-          </div>
-        </div>
+    <div className="min-h-screen bg-bg">
+      <TopNav
+        apiConnected={apiConnected}
+        lastRefresh={lastRefresh}
+        onRefresh={handleRefresh}
+        loading={isLoading}
+      />
 
-        <form onSubmit={(e) => e.preventDefault()} className="flex flex-col md:flex-row gap-4 items-end flex-wrap">
-          <div className="flex-1 min-w-[180px]">
-            <label htmlFor="dateFrom" className="block text-sm font-medium text-heading mb-1">
-              Start date
-            </label>
-            <input
-              id="dateFrom"
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full px-3 py-2 border border-subtle rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              required
-            />
-          </div>
-          <div className="flex-1 min-w-[180px]">
-            <label htmlFor="dateTo" className="block text-sm font-medium text-heading mb-1">
-              End date
-            </label>
-            <input
-              id="dateTo"
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="w-full px-3 py-2 border border-subtle rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              required
-            />
-          </div>
-          <div className="flex-1 min-w-[140px]">
-            <label htmlFor="cutoffHour" className="block text-sm font-medium text-heading mb-1">
-              Cutoff hour (0-23)
-            </label>
-            <input
-              id="cutoffHour"
-              type="number"
-              min="0"
-              max="23"
-              value={cutoffHour}
-              onChange={(e) => setCutoffHour(parseInt(e.target.value, 10) || 0)}
-              className="w-full px-3 py-2 border border-subtle rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-            />
-          </div>
-          <div className="flex-1 min-w-[140px]">
-            <label htmlFor="cutoffMinute" className="block text-sm font-medium text-heading mb-1">
-              Cutoff minute (0-59)
-            </label>
-            <input
-              id="cutoffMinute"
-              type="number"
-              min="0"
-              max="59"
-              value={cutoffMinute}
-              onChange={(e) => setCutoffMinute(parseInt(e.target.value, 10) || 0)}
-              className="w-full px-3 py-2 border border-subtle rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-            />
-          </div>
-          <div className="flex-1 min-w-[200px]">
-            <label htmlFor="timezone" className="block text-sm font-medium text-heading mb-1">
-              Timezone
-            </label>
-            <select
-              id="timezone"
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              className="w-full px-3 py-2 border border-subtle rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-            >
-              <option value="Europe/London">Europe/London</option>
-              <option value="UTC">UTC</option>
-            </select>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Loading…' : 'Refresh Data'}
-            </button>
-            <button
-              type="button"
-              onClick={handleFilterChange}
-              disabled={isLoading}
-              className="px-4 py-2 bg-gray-100 text-heading border border-subtle rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50"
-            >
-              Apply Filters
-            </button>
-          </div>
-        </form>
-
+      <main className="container py-4 md:py-6">
         {error && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm" role="alert">
-            {error}
+          <div className="mb-4 p-3 rounded-lg bg-error-light border border-error/20 text-error text-sm flex items-start gap-2" role="alert">
+            <AlertCircle className="icon-md flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <span>{error}</span>
           </div>
         )}
-      </section>
 
-      {/* KPI Cards */}
-      <section aria-labelledby="kpi-heading" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <h2 id="kpi-heading" className="sr-only">Key Performance Indicators</h2>
-        <KPICard
-          title="Mean Absolute Error (MAE)"
-          value={accuracy?.mae_mw}
-          unit="MW"
-          description="Average magnitude of forecast error"
-          loading={loadingStates.accuracy === 'loading'}
-        />
-        <KPICard
-          title="Root Mean Squared Error (RMSE)"
-          value={accuracy?.rmse_mw}
-          unit="MW"
-          description="Penalizes large errors more heavily"
-          loading={loadingStates.accuracy === 'loading'}
-        />
-        <KPICard
-          title="Mean Forecast Bias"
-          value={accuracy?.mean_error_mw}
-          unit="MW"
-          description={getBiasLabel(accuracy?.mean_error_mw ?? 0).label}
-          valueColor={getBiasLabel(accuracy?.mean_error_mw ?? 0).color}
-          loading={loadingStates.accuracy === 'loading'}
-        />
-        <KPICard
-          title="Evaluation Coverage"
-          value={coverage?.evaluation_coverage_pct}
-          unit="%"
-          description="Intervals with both forecast and actual"
-          loading={loadingStates.coverage === 'loading'}
-        />
-      </section>
-
-      {/* Optional MAPE card */}
-      {accuracy && accuracy.mape_percent !== null && (
-        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <KPICard
-            title="Mean Absolute Percentage Error (MAPE)"
-            value={accuracy.mape_percent}
-            unit="%"
-            description={`Excludes ${accuracy.mape_excluded_count} intervals with actual ≤ 1 MW`}
-            loading={loadingStates.accuracy === 'loading'}
-          />
+        {/* A. Page Introduction */}
+        <section className="mb-6" aria-labelledby="page-intro-heading">
+          <h2 id="page-intro-heading" className="sr-only">Page Introduction</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="page-title">Wind Forecast Accuracy</h1>
+              <p className="page-subtitle mt-1">UK Wind Generation — Day-ahead Forecast Accuracy</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-text-muted">
+              <span className="flex items-center gap-1.5">
+                <Database className="icon-sm" aria-hidden="true" />
+                Elexon BMRS (FUELHH + WINDFOR)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Globe className="icon-sm" aria-hidden="true" />
+                Europe/London
+              </span>
+              {lastRefresh && (
+                <span className="flex items-center gap-1.5">
+                  <RotateCcw className="icon-sm" aria-hidden="true" />
+                  Last refresh: {lastRefresh.toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'medium' })}
+                </span>
+              )}
+            </div>
+          </div>
         </section>
-      )}
 
-      {/* Chart Section */}
-      <section className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Forecast vs Actual Generation</h2>
+        {/* B. Filter Toolbar */}
+        <section className="card p-4 mb-6" aria-labelledby="filters-heading">
+          <h2 id="filters-heading" className="sr-only">Filters</h2>
+          <form onSubmit={(e) => e.preventDefault()} className="flex flex-col sm:flex-row gap-3 items-end flex-wrap">
+            <div className="flex-1 min-w-[160px]">
+              <label htmlFor="dateFrom" className="form-label">
+                <Calendar className="icon-sm inline mr-1" aria-hidden="true" />
+                Start date
+              </label>
+              <input
+                id="dateFrom"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="form-input"
+                required
+              />
+            </div>
+            <div className="flex-1 min-w-[160px]">
+              <label htmlFor="dateTo" className="form-label">
+                <Calendar className="icon-sm inline mr-1" aria-hidden="true" />
+                End date
+              </label>
+              <input
+                id="dateTo"
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="form-input"
+                required
+              />
+            </div>
+            <div className="flex-1 min-w-[120px]">
+              <label htmlFor="cutoffHour" className="form-label">
+                <Clock className="icon-sm inline mr-1" aria-hidden="true" />
+                Cutoff hour (0-23)
+              </label>
+              <input
+                id="cutoffHour"
+                type="number"
+                min="0"
+                max="23"
+                value={cutoffHour}
+                onChange={(e) => setCutoffHour(parseInt(e.target.value, 10) || 0)}
+                className="form-input"
+              />
+            </div>
+            <div className="flex-1 min-w-[120px]">
+              <label htmlFor="cutoffMinute" className="form-label">
+                <Clock className="icon-sm inline mr-1" aria-hidden="true" />
+                Cutoff minute (0-59)
+              </label>
+              <input
+                id="cutoffMinute"
+                type="number"
+                min="0"
+                max="59"
+                value={cutoffMinute}
+                onChange={(e) => setCutoffMinute(parseInt(e.target.value, 10) || 0)}
+                className="form-input"
+              />
+            </div>
+            <div className="flex-1 min-w-[160px]">
+              <label htmlFor="timezone" className="form-label">
+                <Globe className="icon-sm inline mr-1" aria-hidden="true" />
+                Timezone
+              </label>
+              <select
+                id="timezone"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                className="form-input"
+              >
+                <option value="Europe/London">Europe/London</option>
+                <option value="UTC">UTC</option>
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleFilterChange}
+                disabled={isLoading}
+                className="btn btn-secondary gap-2"
+              >
+                <Filter className="icon-sm" aria-hidden="true" />
+                <span className="hidden sm:inline">Apply</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="btn btn-primary gap-2"
+              >
+                <RotateCcw className={`icon-sm ${isLoading ? 'animate-spin' : ''}`} aria-hidden="true" />
+                <span className="hidden sm:inline">{isLoading ? 'Loading…' : 'Refresh'}</span>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        {/* C. KPI Cards */}
+        <section aria-labelledby="kpi-heading" className="mb-6">
+          <h2 id="kpi-heading" className="sr-only">Key Performance Indicators</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KPICard
+              title="Mean Absolute Error (MAE)"
+              value={accuracy?.mae_mw}
+              unit="MW"
+              description="Average magnitude of forecast error"
+              loading={loadingStates.accuracy === 'loading'}
+            />
+            <KPICard
+              title="Root Mean Squared Error (RMSE)"
+              value={accuracy?.rmse_mw}
+              unit="MW"
+              description="Penalizes large errors more heavily"
+              loading={loadingStates.accuracy === 'loading'}
+            />
+            <KPICard
+              title="Mean Forecast Bias"
+              value={accuracy?.mean_error_mw}
+              unit="MW"
+              description={getBiasLabel(accuracy?.mean_error_mw ?? 0).label}
+              valueColor={getBiasLabel(accuracy?.mean_error_mw ?? 0).color}
+              loading={loadingStates.accuracy === 'loading'}
+            />
+            <KPICard
+              title="Evaluation Coverage"
+              value={coverageMetrics?.evaluation_coverage_pct}
+              unit="%"
+              description="Intervals with both forecast and actual"
+              loading={loadingStates.coverage === 'loading'}
+            />
+          </div>
+
+          {/* Optional MAPE card */}
+          {accuracy && accuracy.mape_percent !== null && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <KPICard
+                title="Mean Absolute Percentage Error (MAPE)"
+                value={accuracy.mape_percent}
+                unit="%"
+                description={`Excludes ${accuracy.mape_excluded_count} intervals with actual ≤ 1 MW`}
+                loading={loadingStates.accuracy === 'loading'}
+              />
+            </div>
+          )}
+        </section>
+
+        {/* D. Main Chart - Actual vs Forecast Generation */}
+        <section className="card p-4 md:p-6 mb-6" aria-labelledby="main-chart-heading">
+          <h2 id="main-chart-heading" className="section-title mb-4">Forecast vs Actual Generation</h2>
+
           {availableDays.length > 0 && (
-            <div className="flex items-center gap-2">
-              <label htmlFor="selectedDay" className="text-sm font-medium text-gray-700">
+            <div className="flex items-center gap-2 mb-4">
+              <label htmlFor="selectedDay" className="form-label mb-0">
+                <Calendar className="icon-sm inline mr-1" aria-hidden="true" />
                 View day:
               </label>
               <select
                 id="selectedDay"
                 value={selectedDay || ''}
                 onChange={(e) => setSelectedDay(e.target.value || null)}
-                className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[180px]"
+                className="form-input max-w-xs"
               >
                 <option value="">All days ({chartData.length} intervals)</option>
                 {availableDays.map((day) => (
@@ -358,345 +418,402 @@ export function Dashboard() {
               </select>
             </div>
           )}
-        </div>
 
-        {loadingStates.timeSeries === 'loading' ? (
-          <ChartSkeleton height={400} />
-        ) : chartData.length === 0 ? (
-          <EmptyState message="No time-series data available for the selected range." />
-        ) : (
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="delivery_start_utc"
-                  type="number"
-                  domain={['dataMin', 'dataMax']}
-                  tickFormatter={(value) => formatTime(value)}
-                  tick={{ fontSize: 11, fill: '#6b7280' }}
-                  axisLine={{ stroke: '#d1d5db' }}
-                  tickLine={{ stroke: '#d1d5db' }}
-                />
-                <YAxis
-                  tickFormatter={(value) => `${formatNumber(value)} MW`}
-                  tick={{ fontSize: 11, fill: '#6b7280' }}
-                  axisLine={{ stroke: '#d1d5db' }}
-                  tickLine={{ stroke: '#d1d5db' }}
-                />
-<Tooltip
-                  formatter={(value, name) => [typeof value === 'number' ? formatNumber(value) : '—', name]}
-                  labelFormatter={(value) => (value ? formatDateTime(String(value)) : '')}
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                  }}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="forecast_generation_mw"
-                  name="Forecast (MW)"
-                  stroke="#F59E0B"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                  connectNulls={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="actual_generation_mw"
-                  name="Actual (MW)"
-                  stroke="#2563EB"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                  connectNulls={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+          {loadingStates.timeSeries === 'loading' ? (
+            <ChartSkeleton height={400} />
+          ) : chartData.length === 0 ? (
+            <EmptyState message="No time-series data available for the selected range." />
+          ) : (
+            <div className="h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 50, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <XAxis
+                    dataKey="delivery_start_utc"
+                    type="number"
+                    domain={['dataMin', 'dataMax']}
+                    tickFormatter={(value) => formatTime(value)}
+                    {...AXIS_STYLE}
+                  />
+                  <YAxis
+                    tickFormatter={(value) => `${formatNumber(value)} MW`}
+                    {...AXIS_STYLE}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [typeof value === 'number' ? formatNumber(value) : '—', name]}
+                    labelFormatter={(value) => (value ? formatDateTime(String(value)) : '')}
+                    contentStyle={TOOLTIP_STYLE}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                  <Line
+                    type="monotone"
+                    dataKey="forecast_generation_mw"
+                    name="Forecast (MW)"
+                    stroke="var(--color-forecast)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: 'var(--color-forecast)' }}
+                    connectNulls={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="actual_generation_mw"
+                    name="Actual (MW)"
+                    stroke="var(--color-actual)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: 'var(--color-actual)' }}
+                    connectNulls={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
-        <p className="mt-4 text-sm text-gray-600">
-          <strong>Error convention:</strong> Error = Forecast − Actual. Positive = overestimation (forecast {' > '} actual), Negative = underestimation.
-          Gaps indicate missing actual or forecast data.
-        </p>
-      </section>
+          <p className="mt-4 text-sm text-text-muted">
+            <strong>Error convention:</strong> Error = Forecast - Actual. Positive = overestimation (forecast greater than actual), Negative = underestimation.
+            Gaps indicate missing actual or forecast data.
+          </p>
+        </section>
 
-      {/* Forecast Error Visualization */}
-      <section className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Forecast Error (MW)</h2>
-        {loadingStates.timeSeries === 'loading' ? (
-          <ChartSkeleton height={300} />
-        ) : chartData.length === 0 ? (
-          <EmptyState message="No error data available." />
-        ) : (
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="delivery_start_utc"
-                  type="number"
-                  domain={['dataMin', 'dataMax']}
-                  tickFormatter={(value) => formatTime(value)}
-                  tick={{ fontSize: 11, fill: '#6b7280' }}
-                  axisLine={{ stroke: '#d1d5db' }}
-                  tickLine={{ stroke: '#d1d5db' }}
-                />
-                <YAxis
-                  tickFormatter={(value) => `${formatNumber(value)} MW`}
-                  tick={{ fontSize: 11, fill: '#6b7280' }}
-                  axisLine={{ stroke: '#d1d5db' }}
-                  tickLine={{ stroke: '#d1d5db' }}
-                />
-<Tooltip
-                  formatter={(value, name) => [typeof value === 'number' ? formatNumber(value) : '—', name]}
-                  labelFormatter={(value) => (value ? formatDateTime(String(value)) : '')}
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                  }}
-                />
-                <Legend />
-                <ReferenceLine y={0} stroke="#9ca3af" strokeWidth={1} strokeDasharray="3 3" />
-                <Bar
-                  dataKey="error_mw"
-                  name="Error (MW)"
-                  radius={[4, 4, 0, 0]}
-                >
-                  {chartData.map((entry, index) => (
-                    <Bar
-                      key={index}
-                      fill={entry.error_mw === null ? '#9ca3af' : entry.error_mw > 0 ? '#EF4444' : '#3B82F6'}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-<p className="mt-4 text-sm text-gray-600">
-           Red bars = overestimation (forecast {' > '} actual), Blue bars = underestimation (forecast {' < '} actual), Gray = missing data.
-           Zero line indicates perfect forecast.
-         </p>
-      </section>
+        {/* E. Forecast Error Chart */}
+        <section className="card p-4 md:p-6 mb-6" aria-labelledby="error-chart-heading">
+          <h2 id="error-chart-heading" className="section-title mb-4">Forecast Error (MW)</h2>
 
-      {/* Accuracy Analysis Section */}
-      {kpiData && accuracy && directional && distribution && coverage && (
-        <section className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Accuracy Analysis</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            <MetricDetail
-              label="MAE"
-              value={formatNumber(accuracy.mae_mw)}
-              unit="MW"
-              description="Mean Absolute Error — average absolute forecast error"
-            />
-            <MetricDetail
-              label="RMSE"
-              value={formatNumber(accuracy.rmse_mw)}
-              unit="MW"
-              description="Root Mean Squared Error — penalizes large errors"
-            />
-            <MetricDetail
-              label="Mean Error (Bias)"
-              value={formatNumber(accuracy.mean_error_mw)}
-              unit="MW"
-              description={`Systematic tendency: ${getBiasLabel(accuracy.mean_error_mw).label}`}
-              valueColor={getBiasLabel(accuracy.mean_error_mw).color}
-            />
-            {accuracy.mape_percent !== null && (
+          {loadingStates.timeSeries === 'loading' ? (
+            <ChartSkeleton height={300} />
+          ) : chartData.length === 0 ? (
+            <EmptyState message="No error data available." />
+          ) : (
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 5, right: 30, left: 50, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <XAxis
+                    dataKey="delivery_start_utc"
+                    type="number"
+                    domain={['dataMin', 'dataMax']}
+                    tickFormatter={(value) => formatTime(value)}
+                    {...AXIS_STYLE}
+                  />
+                  <YAxis
+                    tickFormatter={(value) => `${formatNumber(value)} MW`}
+                    {...AXIS_STYLE}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [typeof value === 'number' ? formatNumber(value) : '—', name]}
+                    labelFormatter={(value) => (value ? formatDateTime(String(value)) : '')}
+                    contentStyle={TOOLTIP_STYLE}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                  <ReferenceLine y={0} stroke="#94A3B8" strokeWidth={1} strokeDasharray="3 3" />
+                  <Bar
+                    dataKey="error_mw"
+                    name="Error (MW)"
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Bar
+                        key={index}
+                        fill={
+                          entry.error_mw === null ? '#94A3B8'
+                          : entry.error_mw > 0 ? 'var(--color-overestimation)'
+                          : 'var(--color-underestimation)'
+                        }
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          <p className="mt-4 text-sm text-text-muted">
+            Red bars = overestimation (forecast greater than actual), Blue bars = underestimation (forecast less than actual), Gray = missing data.
+            Zero line indicates perfect forecast.
+          </p>
+        </section>
+
+        {/* F. Accuracy Details */}
+        {kpiData && accuracy && directional && distribution && coverageMetrics && (
+          <section className="card p-4 md:p-6 mb-6" aria-labelledby="accuracy-heading">
+            <h2 id="accuracy-heading" className="section-title mb-4">Accuracy Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               <MetricDetail
-                label="MAPE"
-                value={formatPercentage(accuracy.mape_percent)}
-                unit=""
-                description={`Excludes ${accuracy.mape_excluded_count} intervals with actual ≤ 1 MW`}
+                label="MAE"
+                value={formatNumber(accuracy.mae_mw)}
+                unit="MW"
+                description="Mean Absolute Error — average absolute forecast error"
               />
-            )}
-            <MetricDetail
-              label="Overestimation Frequency"
-              value={formatPercentage(directional.overestimation_frequency_pct)}
-              unit=""
-              description={`Over: ${directional.overestimation_count} intervals`}
-            />
-            <MetricDetail
-              label="Underestimation Frequency"
-              value={formatPercentage(directional.underestimation_frequency_pct)}
-              unit=""
-              description={`Under: ${directional.underestimation_count} intervals`}
-            />
-            <MetricDetail
-              label="Max Absolute Error"
-              value={formatNumber(distribution.max_absolute_error_mw)}
-              unit="MW"
-              description="Largest single forecast error"
-            />
-            <MetricDetail
-              label="P90 Absolute Error"
-              value={formatNumber(distribution.p90_absolute_error_mw)}
-              unit="MW"
-              description="90th percentile of absolute errors"
-            />
-            <MetricDetail
-              label="Evaluated Intervals"
-              value={formatNumber(coverage.matched_intervals)}
-              unit=""
-              description={`of ${coverage.total_evaluated_intervals} total`}
-            />
-            <MetricDetail
-              label="Missing Forecast"
-              value={formatNumber(coverage.missing_forecast_intervals)}
-              unit=""
-              description="Intervals with no eligible forecast"
-            />
-            <MetricDetail
-              label="Missing Actual"
-              value={formatNumber(coverage.missing_actual_intervals)}
-              unit=""
-              description="Intervals with no actual generation"
-            />
-          </div>
+              <MetricDetail
+                label="RMSE"
+                value={formatNumber(accuracy.rmse_mw)}
+                unit="MW"
+                description="Root Mean Squared Error — penalizes large errors"
+              />
+              <MetricDetail
+                label="Mean Error (Bias)"
+                value={formatNumber(accuracy.mean_error_mw)}
+                unit="MW"
+                description={`Systematic tendency: ${getBiasLabel(accuracy.mean_error_mw).label}`}
+                valueColor={getBiasLabel(accuracy.mean_error_mw).color}
+              />
+              {accuracy.mape_percent !== null && (
+                <MetricDetail
+                  label="MAPE"
+                  value={formatPercentage(accuracy.mape_percent)}
+                  unit=""
+                  description={`Excludes ${accuracy.mape_excluded_count} intervals with actual ≤ 1 MW`}
+                />
+              )}
+              <MetricDetail
+                label="Overestimation Frequency"
+                value={formatPercentage(directional.overestimation_frequency_pct)}
+                unit=""
+                description={`Over: ${directional.overestimation_count} intervals`}
+              />
+              <MetricDetail
+                label="Underestimation Frequency"
+                value={formatPercentage(directional.underestimation_frequency_pct)}
+                unit=""
+                description={`Under: ${directional.underestimation_count} intervals`}
+              />
+              <MetricDetail
+                label="Max Absolute Error"
+                value={formatNumber(distribution.max_absolute_error_mw)}
+                unit="MW"
+                description="Largest single forecast error"
+              />
+              <MetricDetail
+                label="P90 Absolute Error"
+                value={formatNumber(distribution.p90_absolute_error_mw)}
+                unit="MW"
+                description="90th percentile of absolute errors"
+              />
+              <MetricDetail
+                label="P95 Absolute Error"
+                value={formatNumber(distribution.p95_absolute_error_mw)}
+                unit="MW"
+                description="95th percentile of absolute errors"
+              />
+              <MetricDetail
+                label="Evaluated Intervals"
+                value={formatNumber(coverageMetrics.matched_intervals)}
+                unit=""
+                description={`of ${coverageMetrics.total_evaluated_intervals} total`}
+              />
+              <MetricDetail
+                label="Missing Forecast"
+                value={formatNumber(coverageMetrics.missing_forecast_intervals)}
+                unit=""
+                description="Intervals with no eligible forecast"
+              />
+              <MetricDetail
+                label="Missing Actual"
+                value={formatNumber(coverageMetrics.missing_actual_intervals)}
+                unit=""
+                description="Intervals with no actual generation"
+              />
+            </div>
 
-          {/* Business Insights */}
-          {insights && (
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">Key Finding</h3>
-              <p className="text-gray-700 mb-4">{insights.key_finding}</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-gray-900">Systematic bias:</span>{' '}
-                  <span className={insights.bias_direction === 'positive' ? 'text-red-600' : insights.bias_direction === 'negative' ? 'text-blue-600' : 'text-green-600'}>
-                    {insights.systematic_bias} ({formatNumber(insights.bias_magnitude_mw)} MW)
-                  </span>
+            {/* Business Insights */}
+            {insights && (
+              <div className="p-4 rounded-lg bg-bg border border-border">
+                <h3 className="font-semibold text-heading mb-2 flex items-center gap-2">
+                  <Info className="icon-sm text-accent" aria-hidden="true" />
+                  Key Finding
+                </h3>
+                <p className="text-text mb-4">{insights.key_finding}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
+                  <div>
+                    <span className="font-medium text-heading">Systematic bias:</span>{' '}
+                    <span className={
+                      insights.bias_direction === 'positive' ? 'text-overestimation' :
+                      insights.bias_direction === 'negative' ? 'text-underestimation' : 'text-success'
+                    }>
+                      {insights.systematic_bias} ({formatNumber(insights.bias_magnitude_mw)} MW)
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-heading">Higher error periods:</span>{' '}
+                    <span className="text-text-muted">{insights.higher_error_periods.join(', ') || 'None identified'}</span>
+                  </div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-900">Higher error periods:</span>{' '}
-                  <span className="text-gray-700">{insights.higher_error_periods.join(', ') || 'None identified'}</span>
+                  <h4 className="font-medium text-heading mb-2">Caveats</h4>
+                  <ul className="list-disc list-inside text-sm text-text-muted space-y-1">
+                    {insights.caveats.map((caveat, i) => (
+                      <li key={i}>{caveat}</li>
+                    ))}
+                  </ul>
                 </div>
               </div>
-              <div className="mt-4">
-                <h4 className="font-medium text-gray-900 mb-2">Caveats</h4>
-                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                  {insights.caveats.map((caveat, i) => (
-                    <li key={i}>{caveat}</li>
+            )}
+          </section>
+        )}
+
+        {/* G. Data Quality */}
+        {data.coverage && (
+          <section className="card p-4 md:p-6 mb-6" aria-labelledby="data-quality-heading">
+            <h2 id="data-quality-heading" className="section-title mb-4">Data Quality</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <DataQualityCard label="Expected Intervals" value={formatNumber(data.coverage.expected_intervals)} />
+              <DataQualityCard label="Actual Intervals" value={formatNumber(data.coverage.actual_intervals)} />
+              <DataQualityCard label="Forecast Intervals" value={formatNumber(data.coverage.forecast_intervals)} />
+              <DataQualityCard label="Forecast Versions" value={formatNumber(data.coverage.forecast_versions)} />
+              <DataQualityCard label="Actual Coverage" value={formatPercentage(data.coverage.actual_coverage_pct)} />
+              <DataQualityCard label="Forecast Coverage" value={formatPercentage(data.coverage.forecast_coverage_pct)} />
+              <DataQualityCard label="Missing Actual" value={formatNumber(data.coverage.missing_actual_intervals)} />
+              <DataQualityCard label="Missing Forecast" value={formatNumber(data.coverage.missing_forecast_intervals)} />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="p-4 rounded-lg bg-bg border border-border">
+                <h3 className="font-medium text-heading mb-2">Methodology</h3>
+                <ul className="list-disc list-inside text-text-muted space-y-1">
+                  {methodology && Object.entries(methodology).map(([key, value]) => (
+                    <li key={key}><span className="font-medium">{key}:</span> {value}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="p-4 rounded-lg bg-bg border border-border">
+                <h3 className="font-medium text-heading mb-2">Dataset Provenance</h3>
+                <ul className="list-disc list-inside text-text-muted space-y-1">
+                  {provenance && Object.entries(provenance).map(([key, value]) => (
+                    <li key={key}><span className="font-medium">{key}:</span> {value}</li>
                   ))}
                 </ul>
               </div>
             </div>
-          )}
-        </section>
-      )}
 
-      {/* Decision-Time Forecast Transparency */}
-      {data.dayAhead && dayAheadForDay.length > 0 && (
-        <section className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Decision-Time Forecast Transparency</h2>
-          <p className="text-sm text-gray-600 mb-4">
-            Forecasts selected for each delivery interval based on the latest eligible publication before the
-            procurement cutoff ({cutoffConfig?.hour?.toString().padStart(2, '0')}:{cutoffConfig?.minute?.toString().padStart(2, '0')} {cutoffConfig?.timezone} on D-1).
-            Forecasts published after the cutoff are excluded (look-ahead bias prevention).
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm" role="table">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left p-2 font-medium text-gray-700">Delivery</th>
-                  <th className="text-left p-2 font-medium text-gray-700">Decision Cutoff</th>
-                  <th className="text-left p-2 font-medium text-gray-700">Forecast (MW)</th>
-                  <th className="text-left p-2 font-medium text-gray-700">Published</th>
-                  <th className="text-left p-2 font-medium text-gray-700">Age (hrs)</th>
-                  <th className="text-left p-2 font-medium text-gray-700">Actual (MW)</th>
-                  <th className="text-left p-2 font-medium text-gray-700">Error (MW)</th>
-                  <th className="text-left p-2 font-medium text-gray-700">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dayAheadForDay.map((record, idx) => {
-                  const aligned = data.timeSeries?.records.find(
-                    (r) => r.settlement_date === record.settlement_date && r.settlement_period === record.settlement_period
-                  );
-                  const actualMw = aligned?.actual_generation_mw ?? null;
-                  const errorMw = aligned?.error_mw ?? null;
-                  return (
-                    <tr key={`${record.settlement_date}-${record.settlement_period}`} className={idx % 2 === 0 ? 'bg-gray-50' : ''}>
-                      <td className="p-2 border-b border-gray-100">
-                        {formatDate(record.settlement_date)} SP{record.settlement_period}
-                      </td>
-                      <td className="p-2 border-b border-gray-100">{formatDateTime(record.decision_cutoff_utc)}</td>
-                      <td className="p-2 border-b border-gray-100 font-mono">{formatNumber(record.forecast_generation_mw)}</td>
-                      <td className="p-2 border-b border-gray-100">{formatDateTime(record.forecast_publish_time_utc)}</td>
-                      <td className="p-2 border-b border-gray-100 font-mono">{formatNumber(record.forecast_age_hours, 1)}</td>
-                      <td className="p-2 border-b border-gray-100 font-mono">{actualMw !== null ? formatNumber(actualMw) : '—'}</td>
-                      <td className="p-2 border-b border-gray-100 font-mono">
-                        <span className={getErrorColor(errorMw)}>{errorMw !== null ? formatNumber(errorMw) : '—'}</span>
-                      </td>
-                      <td className="p-2 border-b border-gray-100">
-                        <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${getSelectionStatusColor(record.selection_status)}`}>
-                          {getSelectionStatusLabel(record.selection_status)}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* Data Quality Panel */}
-      {data.coverage && (
-        <section className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Data Quality & Provenance</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <DataQualityCard label="Expected Intervals" value={formatNumber(data.coverage.expected_intervals)} />
-            <DataQualityCard label="Actual Intervals" value={formatNumber(data.coverage.actual_intervals)} />
-            <DataQualityCard label="Forecast Intervals" value={formatNumber(data.coverage.forecast_intervals)} />
-            <DataQualityCard label="Forecast Versions" value={formatNumber(data.coverage.forecast_versions)} />
-            <DataQualityCard label="Actual Coverage" value={formatPercentage(data.coverage.actual_coverage_pct)} />
-            <DataQualityCard label="Forecast Coverage" value={formatPercentage(data.coverage.forecast_coverage_pct)} />
-            <DataQualityCard label="Missing Actual" value={formatNumber(data.coverage.missing_actual_intervals)} />
-            <DataQualityCard label="Missing Forecast" value={formatNumber(data.coverage.missing_forecast_intervals)} />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-900 mb-2">Methodology</h3>
-              <ul className="list-disc list-inside text-gray-600 space-y-1">
-                {methodology && Object.entries(methodology).map(([key, value]) => (
-                  <li key={key}><span className="font-medium">{key}:</span> {value}</li>
-                ))}
-              </ul>
+            <div className="mt-4 p-3 rounded-lg bg-actual-light border border-actual/20 text-actual text-sm">
+              <strong>Note:</strong> This analysis uses historical Elexon BMRS data (FUELHH actuals, WINDFOR forecasts).
+              Data is not live; it represents the January 2026 proxy period. Coverage percentages reflect data availability in the Elexon archive.
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-900 mb-2">Dataset Provenance</h3>
-              <ul className="list-disc list-inside text-gray-600 space-y-1">
-                {provenance && Object.entries(provenance).map(([key, value]) => (
-                  <li key={key}><span className="font-medium">{key}:</span> {value}</li>
-                ))}
-              </ul>
+          </section>
+        )}
+
+        {/* H. Methodology (Collapsible) */}
+        <section className="card p-4 md:p-6 mb-6" aria-labelledby="methodology-heading">
+          <button
+            type="button"
+            onClick={() => setShowMethodology(!showMethodology)}
+            className="flex items-center justify-between w-full text-left section-title"
+            aria-expanded={showMethodology}
+            aria-controls="methodology-content"
+          >
+            <span className="flex items-center gap-2">
+              <Info className="icon-md text-accent" aria-hidden="true" />
+              Methodology & Assumptions
+            </span>
+            <span className={`icon-md transition-transform ${showMethodology ? 'rotate-180' : ''}`}>
+              <ChevronDown className="text-text-muted" aria-hidden="true" />
+            </span>
+          </button>
+          <div id="methodology-content" className={showMethodology ? 'mt-4' : 'hidden'}>
+            <div className="space-y-3 text-sm text-text-muted">
+              <div className="p-4 rounded-lg bg-bg border border-border">
+                <h3 className="font-medium text-heading mb-2">Data Sources</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li><strong>Actual Generation:</strong> Elexon BMRS FUELHH dataset, filtered to WIND fuel type. Half-hourly settlement periods in MW.</li>
+                  <li><strong>Forecasts:</strong> Elexon BMRS WINDFOR dataset via the official Insights API. Historical publications at 06:00 and 10:00 UTC on D-1 for each delivery date.</li>
+                </ul>
+              </div>
+              <div className="p-4 rounded-lg bg-bg border border-border">
+                <h3 className="font-medium text-heading mb-2">Forecast Selection Methodology</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li><strong>Cutoff:</strong> Default 12:00 Europe/London on D-1 (EPEX SPOT day-ahead gate closure).</li>
+                  <li><strong>Eligibility:</strong> Only forecasts published on or before the cutoff are eligible.</li>
+                  <li><strong>Selection:</strong> For each delivery hour, select the latest eligible forecast by publishTime.</li>
+                  <li><strong>Tie-breaking:</strong> If multiple forecasts share the same publishTime, select the one with the lowest generation_mw (deterministic).</li>
+                  <li><strong>Expansion:</strong> Each hourly forecast covers two half-hour settlement periods; the selected value is applied to both.</li>
+                </ul>
+              </div>
+              <div className="p-4 rounded-lg bg-bg border border-border">
+                <h3 className="font-medium text-heading mb-2">Alignment & Error Calculation</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Actuals and selected forecasts are aligned by UTC delivery interval start.</li>
+                  <li>Error = Forecast − Actual (positive = overestimation).</li>
+                  <li>MAPE excludes intervals where actual generation = 0 MW.</li>
+                  <li>Missing actual/forecast intervals excluded from error metrics.</li>
+                </ul>
+              </div>
+              <div className="p-4 rounded-lg bg-bg border border-border">
+                <h3 className="font-medium text-heading mb-2">Known Limitations</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Analysis limited to January 2026 (31 days, 1,488 intervals).</li>
+                  <li>Only 06:00 and 10:00 UTC D-1 publications fetched; additional eligible publications before cutoff may exist.</li>
+                  <li>DST handling via zoneinfo; assumes 48 periods/day (no spring-forward/fall-back adjustment in Jan).</li>
+                  <li>Elexon public endpoint is rate-limited; API key recommended for production.</li>
+                  <li>No caching layer; each request fetches fresh from Elexon.</li>
+                </ul>
+              </div>
             </div>
           </div>
-
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-800 text-sm">
-            <strong>Note:</strong> This analysis uses historical Elexon BMRS data (FUELHH actuals, WINDFOR forecasts).
-            Data is not live; it represents the January 2026 proxy period. Coverage percentages reflect data availability in the Elexon archive.
-          </div>
         </section>
-      )}
 
-      {!hasData && !isLoading && (
-        <EmptyState
-          message="No data available. Check your date range and ensure the API is accessible."
-          action={{ label: 'Retry', onClick: handleRefresh }}
-        />
-      )}
+        {/* Decision-Time Forecast Transparency */}
+        {data.dayAhead && dayAheadForDay.length > 0 && (
+          <section className="card p-4 md:p-6 mb-6" aria-labelledby="transparency-heading">
+            <h2 id="transparency-heading" className="section-title mb-4">Decision-Time Forecast Transparency</h2>
+            <p className="text-sm text-text-muted mb-4">
+              Forecasts selected for each delivery interval based on the latest eligible publication before the
+              procurement cutoff ({cutoffConfig?.hour?.toString().padStart(2, '0')}:{cutoffConfig?.minute?.toString().padStart(2, '0')} {cutoffConfig?.timezone} on D-1).
+              Forecasts published after the cutoff are excluded (look-ahead bias prevention).
+            </p>
+            <div className="table-container scrollbar-thin">
+              <table className="table" role="table">
+                <thead>
+                  <tr>
+                    <th>Delivery</th>
+                    <th>Decision Cutoff</th>
+                    <th>Forecast (MW)</th>
+                    <th>Published</th>
+                    <th>Age (hrs)</th>
+                    <th>Actual (MW)</th>
+                    <th>Error (MW)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dayAheadForDay.map((record, idx) => {
+                    const aligned = data.timeSeries?.records.find(
+                      (r) => r.settlement_date === record.settlement_date && r.settlement_period === record.settlement_period
+                    );
+                    const actualMw = aligned?.actual_generation_mw ?? null;
+                    const errorMw = aligned?.error_mw ?? null;
+                    return (
+                      <tr key={`${record.settlement_date}-${record.settlement_period}`} className={idx % 2 === 0 ? 'bg-bg' : ''}>
+                        <td className="text-mono">{formatDate(record.settlement_date)} SP{record.settlement_period}</td>
+                        <td>{formatDateTime(record.decision_cutoff_utc)}</td>
+                        <td className="text-mono font-medium">{formatNumber(record.forecast_generation_mw)}</td>
+                        <td>{formatDateTime(record.forecast_publish_time_utc)}</td>
+                        <td className="text-mono">{formatNumber(record.forecast_age_hours, 1)}</td>
+                        <td className="text-mono">{actualMw !== null ? formatNumber(actualMw) : '—'}</td>
+                        <td className="text-mono">
+                          <span className={getErrorColor(errorMw)}>{errorMw !== null ? formatNumber(errorMw) : '—'}</span>
+                        </td>
+                        <td>
+                          <span className={`badge ${getSelectionStatusColor(record.selection_status).replace('text-', '').replace('bg-', 'badge-').replace('border-', '')}`}>
+                            {getSelectionStatusLabel(record.selection_status)}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {!hasData && !isLoading && (
+          <EmptyState
+            message="No data available. Check your date range and ensure the API is accessible."
+            action={{ label: 'Retry', onClick: handleRefresh }}
+          />
+        )}
+      </main>
     </div>
   );
 }
@@ -718,22 +835,22 @@ function KPICard({
 }) {
   if (loading) {
     return (
-      <div className="bg-card rounded-card border border-subtle shadow-subtle p-4 md:p-6 animate-pulse">
-        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-        <div className="h-8 bg-gray-200 rounded w-1/2 mb-1"></div>
-        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+      <div className="card p-4 md:p-6 animate-pulse">
+        <div className="h-4 bg-border rounded w-3/4 mb-2"></div>
+        <div className="h-8 bg-border rounded w-1/2 mb-1"></div>
+        <div className="h-3 bg-border rounded w-2/3"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-card rounded-card border border-subtle shadow-subtle p-4 md:p-6">
-      <h3 className="text-sm font-medium text-muted mb-1">{title}</h3>
+    <div className="card p-4 md:p-6">
+      <h3 className="kpi-label mb-1">{title}</h3>
       <div className="flex items-baseline gap-1 mb-1">
-        <span className={`text-3xl font-semibold ${valueColor || 'text-heading'}`}>{value !== null && value !== undefined ? formatNumber(value) : '—'}</span>
-        <span className="text-muted text-lg">{unit}</span>
+        <span className={`kpi-value ${valueColor || ''}`}>{value !== null && value !== undefined ? formatNumber(value) : '—'}</span>
+        <span className="kpi-unit">{unit}</span>
       </div>
-      <p className="text-xs text-muted">{description}</p>
+      <p className="text-xs text-text-muted">{description}</p>
     </div>
   );
 }
@@ -752,21 +869,21 @@ function MetricDetail({
   valueColor?: string;
 }) {
   return (
-    <div className="bg-gray-50 rounded-card border border-subtle p-4">
-      <p className="text-xs font-medium text-muted uppercase tracking-wider mb-1">{label}</p>
+    <div className="p-4 rounded-lg bg-bg border border-border">
+      <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-1">{label}</p>
       <div className="flex items-baseline gap-1 mb-1">
-        <span className={`text-2xl font-semibold ${valueColor || 'text-heading'}`}>{value}</span>
-        <span className="text-muted">{unit}</span>
+        <span className={`text-2xl font-semibold ${valueColor || ''}`}>{value}</span>
+        <span className="text-text-muted">{unit}</span>
       </div>
-      <p className="text-xs text-muted">{description}</p>
+      <p className="text-xs text-text-muted">{description}</p>
     </div>
   );
 }
 
 function DataQualityCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-gray-50 rounded-card border border-subtle p-4 text-center">
-      <p className="text-xs font-medium text-muted uppercase tracking-wider mb-1">{label}</p>
+    <div className="card p-4 text-center">
+      <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-1">{label}</p>
       <p className="text-2xl font-semibold text-heading">{value}</p>
     </div>
   );
@@ -774,7 +891,7 @@ function DataQualityCard({ label, value }: { label: string; value: string }) {
 
 function ChartSkeleton({ height = 300 }: { height?: number }) {
   return (
-    <div className="animate-pulse h-[{height}px] bg-gray-100 rounded-lg" style={{ height }} />
+    <div className="animate-pulse bg-border rounded-lg" style={{ height: `${height}px` }} />
   );
 }
 
@@ -786,22 +903,104 @@ function EmptyState({
   action?: { label: string; onClick: () => void };
 }) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-      <h3 className="mt-2 text-sm font-medium text-gray-900">No data</h3>
-      <p className="mt-1 text-sm text-gray-500">{message}</p>
+    <div className="card p-12 text-center">
+      <div className="mx-auto w-12 h-12 rounded-full bg-border flex items-center justify-center mb-4">
+        <Info className="icon-xl text-text-muted" aria-hidden="true" />
+      </div>
+      <h3 className="font-medium text-heading mb-1">No data</h3>
+      <p className="text-text-muted mb-4">{message}</p>
       {action && (
         <button
           type="button"
           onClick={action.onClick}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="btn btn-primary gap-2"
         >
+          <RotateCcw className="icon-sm" aria-hidden="true" />
           {action.label}
         </button>
       )}
     </div>
+  );
+}
+
+function TopNav({
+  apiConnected,
+  lastRefresh,
+  onRefresh,
+  loading,
+}: {
+  apiConnected: boolean;
+  lastRefresh: Date | null;
+  onRefresh: () => void;
+  loading: boolean;
+}) {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <header className="sticky top-0 z-40 bg-card border-b border-border shadow-subtle">
+      <div className="container">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent">
+              <Wind className="icon-md text-white" aria-hidden="true" />
+            </div>
+            <div>
+              <h1 className="page-title">Wind Intelligence</h1>
+              <p className="text-xs text-text-muted">UK Day-Ahead Forecast Analytics</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-accent-light text-accent border border-accent-light">
+              <Database className="icon-sm" aria-hidden="true" />
+              Elexon BMRS
+            </div>
+
+            <div className="flex items-center gap-1.5 text-sm text-text-muted">
+              <Info className="icon-sm" aria-hidden="true" />
+              <time dateTime={currentTime.toISOString()}>
+                {currentTime.toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </time>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`flex h-2 w-2 rounded-full ${apiConnected ? 'bg-success' : 'bg-error'}`}
+                aria-hidden="true"
+              />
+              <span className="text-sm font-medium text-text-muted hidden sm:inline">
+                {apiConnected ? 'API Connected' : 'API Disconnected'}
+              </span>
+            </div>
+
+            {lastRefresh && (
+              <div className="hidden md:flex items-center gap-1.5 text-sm text-text-muted">
+                <RotateCcw className="icon-sm" aria-hidden="true" />
+                <time dateTime={lastRefresh.toISOString()}>
+                  {lastRefresh.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                </time>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={loading}
+              className="btn btn-primary gap-2"
+              aria-label="Refresh data"
+            >
+              <RotateCcw className={`icon-sm ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
   );
 }
 
