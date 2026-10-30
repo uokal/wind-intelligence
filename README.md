@@ -110,8 +110,8 @@ Note the deployed URL (e.g., `https://wind-api.vercel.app`).
 The backend uses Vercel's native FastAPI preset with the existing `app/main.py`
 entrypoint. Keep Root Directory set to `apps/wind-api`, Build Command and Output
 Directory overrides switched off in the dashboard. Do not type the word `disabled`
-into a command field. The backend config explicitly sets `buildCommand` to an
-empty string so no custom build command runs. Python 3.12 is selected by `.python-version`.
+into a command field. The backend config supplies a Python import check as its build command, so
+missing dependencies or startup errors fail the build before deployment. Python 3.12 is selected by `.python-version`.
 Do not add `"runtime": "python3.12"` under `functions`; that field is for custom
 runtime packages. Native framework routing preserves `/api/v1/*` and `/docs`
 without a catch-all rewrite to `api/index.py`.
@@ -497,3 +497,15 @@ or a comma-separated list of origins. Values are normalised before FastAPI
 startup. For direct browser access, include the frontend origin, for example
 `["https://wind-web-six.vercel.app"]`. The frontend proxy does not require
 cross-origin browser requests.
+
+### Backend dependency installation in the Nx workspace
+
+The backend `vercel.json` explicitly sets `installCommand` to an empty string.
+This clears the inherited `pnpm install` command; Vercel's native Python builder
+then installs `requirements.txt` through its managed uv environment. A custom
+Node install command would cause the Python builder to assume dependencies were
+already installed, producing `ModuleNotFoundError: No module named 'fastapi'` at
+runtime. The Python build command imports `app.main:app` to verify startup before
+a deployment can become ready. Keep the backend framework set to FastAPI and its
+Root Directory set to `apps/wind-api`. Use a fresh deployment without the old
+build cache when applying this dependency fix.

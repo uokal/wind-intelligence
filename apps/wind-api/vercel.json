@@ -6,5 +6,6 @@
       "maxDuration": 30
     }
   },
-  "buildCommand": ""
+  "buildCommand": "python -c \"from app.main import app; assert app; print('FastAPI startup check passed')\"",
+  "installCommand": ""
 }
