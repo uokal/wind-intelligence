@@ -109,7 +109,9 @@ Note the deployed URL (e.g., `https://wind-api.vercel.app`).
 
 The backend uses Vercel's native FastAPI preset with the existing `app/main.py`
 entrypoint. Keep Root Directory set to `apps/wind-api`, Build Command and Output
-Directory overrides disabled. Python 3.12 is selected by `.python-version`.
+Directory overrides switched off in the dashboard. Do not type the word `disabled`
+into a command field. The backend config explicitly sets `buildCommand` to an
+empty string so no custom build command runs. Python 3.12 is selected by `.python-version`.
 Do not add `"runtime": "python3.12"` under `functions`; that field is for custom
 runtime packages. Native framework routing preserves `/api/v1/*` and `/docs`
 without a catch-all rewrite to `api/index.py`.
