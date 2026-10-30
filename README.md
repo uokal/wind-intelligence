@@ -500,12 +500,11 @@ cross-origin browser requests.
 
 ### Backend dependency installation in the Nx workspace
 
-The backend `vercel.json` explicitly sets `installCommand` to an empty string.
-This clears the inherited `pnpm install` command; Vercel's native Python builder
-then installs `requirements.txt` through its managed uv environment. A custom
-Node install command would cause the Python builder to assume dependencies were
-already installed, producing `ModuleNotFoundError: No module named 'fastapi'` at
-runtime. The Python build command imports `app.main:app` to verify startup before
-a deployment can become ready. Keep the backend framework set to FastAPI and its
-Root Directory set to `apps/wind-api`. Use a fresh deployment without the old
-build cache when applying this dependency fix.
+The backend `vercel.json` explicitly sets `installCommand` to
+`python -m pip install -r requirements.txt`. This overrides Nx's inherited
+`pnpm install` command and installs Python dependencies into the Python builder's
+active virtual environment. An empty install command can be replaced by Nx
+package-manager detection, so it is not sufficient in this workspace.
+The build command imports `app.main:app` to catch missing dependencies or startup
+errors before a deployment becomes ready. Keep the backend framework set to
+FastAPI and its Root Directory set to `apps/wind-api`.

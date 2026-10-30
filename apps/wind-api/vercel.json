@@ -7,5 +7,5 @@
     }
   },
   "buildCommand": "python -c \"from app.main import app; assert app; print('FastAPI startup check passed')\"",
-  "installCommand": ""
+  "installCommand": "python -m pip install -r requirements.txt"
 }
